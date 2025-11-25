@@ -1,0 +1,29 @@
+--- Java / Spring Boot ---
+
+target/
+*.class
+*.jar
+*.war
+.settings/
+.classpath
+.project
+.mvn/
+mvnw
+mvnw.cmd
+*.log
+
+--- Node / React ---
+
+node_modules/
+dist/
+build/
+.env
+.env.local
+.vite/
+
+--- IDEs e Sistema ---
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
