@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.model.*;
 import br.com.cultiva.cultivamais.repository.*;
+import io.micrometer.common.lang.NonNull;
 
 import java.time.LocalDateTime;
 
@@ -15,8 +16,9 @@ public class EventoService {
     @Autowired private IrrigacaoRepository irrigacaoRepository;
     @Autowired private DoencaPragaRepository doencaPragaRepository;
 
-    public Irrigacao registrarIrrigacao(Long idCultivo, double volumeAgua, MetodoIrrigacao metodo, String observacao, LocalDateTime dataHora) {
+    public Irrigacao registrarIrrigacao(@NonNull Long idCultivo, double volumeAgua, MetodoIrrigacao metodo, String observacao, LocalDateTime dataHora) {
         
+        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo).orElseThrow(
             () -> new RuntimeException("Cultivo não encontrado: " + idCultivo));
 
@@ -32,8 +34,9 @@ public class EventoService {
     }
 
 
-    public DoencaPraga registrarDoencaPraga(Long idCultivo, String nomePraga, NivelAfetacao nivel, String observacao, LocalDateTime dataHora) {
+    public DoencaPraga registrarDoencaPraga(@NonNull Long idCultivo, String nomePraga, NivelAfetacao nivel, String observacao, LocalDateTime dataHora) {
         
+        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo).orElseThrow(
             () -> new RuntimeException("Cultivo não encontrado: " + idCultivo));
 

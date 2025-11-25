@@ -12,6 +12,7 @@ import br.com.cultiva.cultivamais.model.Planta;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
 import br.com.cultiva.cultivamais.repository.CultivoRepository;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class CultivoService {
@@ -25,11 +26,13 @@ public class CultivoService {
     @Autowired
     private AreaCultivoRepository areaCultivoRepository;
 
-    public Cultivo criarCultivo(Long idPlanta, Long idArea, double quantidadePlantada, LocalDate dataPlantio) {
+    public Cultivo criarCultivo(@NonNull Long idPlanta, @NonNull Long idArea, double quantidadePlantada, LocalDate dataPlantio) {
 
+        @SuppressWarnings("null")
         Planta planta = plantaRepository.findById(idPlanta).orElseThrow(
             () -> new RuntimeException("Planta não encontrada com ID: " + idPlanta));
 
+        @SuppressWarnings("null")
         AreaCultivo areaCultivo = areaCultivoRepository.findById(idArea).orElseThrow(
             () -> new RuntimeException("Área não encontrada com o ID: " + idArea));
 
@@ -42,6 +45,7 @@ public class CultivoService {
         return cultivoRepository.findAll();
     }
 
+    @SuppressWarnings("null")
     public void excluirCultivo(Long id) {
         if (cultivoRepository.existsById(id)) {
             cultivoRepository.deleteById(id);
@@ -50,7 +54,8 @@ public class CultivoService {
         }
     }
 
-    public Cultivo atualizarCultivo(Long id, Cultivo dadosAtualizados) {
+    @SuppressWarnings("null")
+    public Cultivo atualizarCultivo(@NonNull Long id, Cultivo dadosAtualizados) {
         return cultivoRepository.findById(id)
             .map(cultivoExistente -> {
                 cultivoExistente.setQuantidadePlantada(dadosAtualizados.getQuantidadePlantada());

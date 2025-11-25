@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import br.com.cultiva.cultivamais.model.*;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class GeolocalizacaoService {
@@ -17,7 +18,8 @@ public class GeolocalizacaoService {
         public double umidadeMedia;
     }
 
-    public DadosSolares buscarDadosExternos(Long idAreaCultivo) {
+    @SuppressWarnings("null")
+    public DadosSolares buscarDadosExternos(@NonNull Long idAreaCultivo) {
 
         AreaCultivo area = areaCultivoRepository.findById(idAreaCultivo).orElse(null);
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.model.Usuario;
 import br.com.cultiva.cultivamais.repository.UsuarioRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class UsuarioService {
@@ -14,7 +15,8 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    public Usuario criarUsuario(Usuario novoUsuario) {
+    @SuppressWarnings("null")
+    public Usuario criarUsuario(@NonNull Usuario novoUsuario) {
         return usuarioRepository.save(novoUsuario);
     }
 
@@ -22,7 +24,8 @@ public class UsuarioService {
         return usuarioRepository.findAll();
     }
 
-    public void excluirUsuario(Long id) {
+    @SuppressWarnings("null")
+    public void excluirUsuario(@NonNull Long id) {
         if (usuarioRepository.existsById(id)) {
             usuarioRepository.deleteById(id);
         } else {

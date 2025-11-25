@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.model.AreaCultivo;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class AreaCultivoService {
@@ -14,7 +15,8 @@ public class AreaCultivoService {
     @Autowired
     private AreaCultivoRepository areaCultivoRepository;
 
-    public AreaCultivo criarAreaCultivo(AreaCultivo novaArea) {
+    @SuppressWarnings("null")
+    public AreaCultivo criarAreaCultivo(@NonNull AreaCultivo novaArea) {
         return areaCultivoRepository.save(novaArea);
     }
 
@@ -22,7 +24,8 @@ public class AreaCultivoService {
         return areaCultivoRepository.findAll();
     }
 
-    public void excluirArea(Long id) {
+    @SuppressWarnings("null")
+    public void excluirArea(@NonNull Long id) {
         if (areaCultivoRepository.existsById(id)) {
             areaCultivoRepository.deleteById(id);
         } else {
@@ -30,7 +33,8 @@ public class AreaCultivoService {
         }
     }
     
-    public AreaCultivo atualizarArea(Long id, AreaCultivo dadosAtualizados) {
+    @SuppressWarnings("null")
+    public AreaCultivo atualizarArea(@NonNull Long id, @NonNull AreaCultivo dadosAtualizados) {
         return areaCultivoRepository.findById(id)
             .map(areaExistente -> {
                 areaExistente.setNomeArea(dadosAtualizados.getNomeArea());

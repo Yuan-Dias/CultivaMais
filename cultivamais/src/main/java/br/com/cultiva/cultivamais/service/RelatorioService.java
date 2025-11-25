@@ -17,6 +17,7 @@ import br.com.cultiva.cultivamais.model.TipoSolo;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
 import br.com.cultiva.cultivamais.repository.CultivoRepository;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class RelatorioService {
@@ -31,9 +32,11 @@ public class RelatorioService {
     private AreaCultivoRepository areaCultivoRepository;
 
 
-    public boolean verificarCompatibilidadeSolo(Long idPlanta, Long idAreaCultivo) {
+    public boolean verificarCompatibilidadeSolo(@NonNull Long idPlanta, @NonNull Long idAreaCultivo) {
 
+        @SuppressWarnings("null")
         Planta planta = plantaRepository.findById(idPlanta).orElse(null);
+        @SuppressWarnings("null")
         AreaCultivo areaCultivo = areaCultivoRepository.findById(idAreaCultivo).orElse(null);
 
         if (planta == null || areaCultivo == null || areaCultivo.getTipoSolo() == null) {
@@ -47,7 +50,8 @@ public class RelatorioService {
         return solosIdeais.contains(soloDaArea);
     }
 
-    public double calcularTotalColhidoArea(Long idAreaCultivo) {
+    public double calcularTotalColhidoArea(@NonNull Long idAreaCultivo) {
+        @SuppressWarnings("null")
         AreaCultivo areaCultivo = areaCultivoRepository.findById(idAreaCultivo).orElse(null);
 
         if(areaCultivo == null) {
@@ -62,7 +66,8 @@ public class RelatorioService {
         return totalColhido;
     }
 
-    public double calcularTotalAguaCultivo(Long idCultivo) {
+    public double calcularTotalAguaCultivo(@NonNull Long idCultivo) {
+        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo).orElse(null);
 
         if(cultivo == null) {
@@ -79,7 +84,8 @@ public class RelatorioService {
         return totalVolume;
     }
 
-    public List<DoencaPraga> obterHistoricoPragas(Long idCultivo) {
+    public List<DoencaPraga> obterHistoricoPragas(@NonNull Long idCultivo) {
+        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo).orElse(null);
 
         if(cultivo == null) {
@@ -97,7 +103,8 @@ public class RelatorioService {
         return historicoPragas;
     }
 
-    public List<Cultivo> obterCultivosDaArea(Long idArea) {
+    public List<Cultivo> obterCultivosDaArea(@NonNull Long idArea) {
+        @SuppressWarnings("null")
         AreaCultivo area = areaCultivoRepository.findById(idArea).orElse(null);
         
         if (area == null) {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.model.Planta;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
+import io.micrometer.common.lang.NonNull;
 
 @Service
 public class PlantaService {
@@ -14,7 +15,8 @@ public class PlantaService {
     @Autowired
     private PlantaRepository plantaRepository;
 
-    public Planta criarPlanta(Planta novaPlanta) {
+    @SuppressWarnings("null")
+    public Planta criarPlanta(@NonNull Planta novaPlanta) {
         return plantaRepository.save(novaPlanta);
     }
 
@@ -22,7 +24,8 @@ public class PlantaService {
         return plantaRepository.findAll();
     }
 
-    public void excluirPlanta(Long id) {
+    @SuppressWarnings("null")
+    public void excluirPlanta(@NonNull Long id) {
         if (plantaRepository.existsById(id)) {
             plantaRepository.deleteById(id);
         } else {
@@ -30,7 +33,8 @@ public class PlantaService {
         }
     }    
 
-    public Planta atualizarPlanta(Long id, Planta dadosAtualizados) {
+    @SuppressWarnings("null")
+    public Planta atualizarPlanta(@NonNull Long id, Planta dadosAtualizados) {
         return plantaRepository.findById(id)
             .map(plantaExistente -> {
                 plantaExistente.setNomePopular(dadosAtualizados.getNomePopular());
