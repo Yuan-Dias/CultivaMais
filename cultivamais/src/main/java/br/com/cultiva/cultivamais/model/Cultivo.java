@@ -22,7 +22,6 @@ import jakarta.persistence.OneToMany;
 @Entity
 public class Cultivo {
 
-    //Atributos do Objeto
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idCultivo;

@@ -28,5 +28,15 @@ public class UsuarioService {
         } else {
             throw new RuntimeException("Usuário não encontrado.");
         }
-    }    
+    }
+
+    public Usuario autenticar(String email, String senha) {
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        
+        if (usuario != null && usuario.getSenha().equals(senha)) {
+            return usuario;
+        }
+        
+        return null;
+    }
 }

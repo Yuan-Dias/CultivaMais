@@ -1,14 +1,13 @@
 package br.com.cultiva.cultivamais.model;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 public class Usuario {
 
-    // Atributos do Objeto
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
@@ -17,7 +16,6 @@ public class Usuario {
     private String senha;
     private FuncaoUsuario funcao;
 
-    //Construtor
     public Usuario(String nome, String email, String senha, FuncaoUsuario funcao) {
         this.nomeUsuario = nome;
         this.email = email;
