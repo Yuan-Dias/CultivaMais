@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
 import br.com.cultiva.cultivamais.model.AreaCultivo;
 import br.com.cultiva.cultivamais.model.Cultivo;
 import br.com.cultiva.cultivamais.model.Planta;
@@ -30,11 +31,11 @@ public class CultivoService {
 
         @SuppressWarnings("null")
         Planta planta = plantaRepository.findById(idPlanta).orElseThrow(
-            () -> new RuntimeException("Planta não encontrada com ID: " + idPlanta));
+            () -> new ResourceNotFoundException("Planta não encontrada com ID: " + idPlanta));
 
         @SuppressWarnings("null")
         AreaCultivo areaCultivo = areaCultivoRepository.findById(idArea).orElseThrow(
-            () -> new RuntimeException("Área não encontrada com o ID: " + idArea));
+            () -> new ResourceNotFoundException("Área não encontrada com o ID: " + idArea));
 
         Cultivo novoCultivo = new Cultivo(planta, areaCultivo, dataPlantio, quantidadePlantada);
 
@@ -50,7 +51,7 @@ public class CultivoService {
         if (cultivoRepository.existsById(id)) {
             cultivoRepository.deleteById(id);
         } else {
-            throw new RuntimeException("Cultivo não encontrado para exclusão.");
+            throw new ResourceNotFoundException("Cultivo não encontrado para exclusão.");
         }
     }
 
@@ -75,6 +76,6 @@ public class CultivoService {
 
                 return cultivoRepository.save(cultivoExistente);
             })
-            .orElseThrow(() -> new RuntimeException("Cultivo não encontrado para edição."));
+            .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado para edição."));
     }
 }

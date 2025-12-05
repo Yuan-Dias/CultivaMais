@@ -1,13 +1,20 @@
 package br.com.cultiva.cultivamais.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import br.com.cultiva.cultivamais.model.*;
-import br.com.cultiva.cultivamais.repository.*;
+import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
+import br.com.cultiva.cultivamais.model.Cultivo;
+import br.com.cultiva.cultivamais.model.DoencaPraga;
+import br.com.cultiva.cultivamais.model.Irrigacao;
+import br.com.cultiva.cultivamais.model.MetodoIrrigacao;
+import br.com.cultiva.cultivamais.model.NivelAfetacao;
+import br.com.cultiva.cultivamais.repository.CultivoRepository;
+import br.com.cultiva.cultivamais.repository.DoencaPragaRepository;
+import br.com.cultiva.cultivamais.repository.IrrigacaoRepository;
 import io.micrometer.common.lang.NonNull;
-
-import java.time.LocalDateTime;
 
 @Service
 public class EventoService {
@@ -19,8 +26,8 @@ public class EventoService {
     public Irrigacao registrarIrrigacao(@NonNull Long idCultivo, double volumeAgua, MetodoIrrigacao metodo, String observacao, LocalDateTime dataHora) {
         
         @SuppressWarnings("null")
-        Cultivo cultivo = cultivoRepository.findById(idCultivo).orElseThrow(
-            () -> new RuntimeException("Cultivo não encontrado: " + idCultivo));
+        Cultivo cultivo = cultivoRepository.findById(idCultivo)
+            .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado: " + idCultivo));
 
         Irrigacao novaIrrigacao = new Irrigacao(
             cultivo, 
@@ -38,7 +45,7 @@ public class EventoService {
         
         @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo).orElseThrow(
-            () -> new RuntimeException("Cultivo não encontrado: " + idCultivo));
+            () -> new ResourceNotFoundException("Cultivo não encontrado: " + idCultivo));
 
         DoencaPraga novaDoenca = new DoencaPraga(
             cultivo, 

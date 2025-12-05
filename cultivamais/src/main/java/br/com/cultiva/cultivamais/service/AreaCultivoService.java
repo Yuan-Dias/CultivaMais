@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
 import br.com.cultiva.cultivamais.model.AreaCultivo;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
 import io.micrometer.common.lang.NonNull;
@@ -29,7 +30,7 @@ public class AreaCultivoService {
         if (areaCultivoRepository.existsById(id)) {
             areaCultivoRepository.deleteById(id);
         } else {
-            throw new RuntimeException("Área não encontrada para exclusão.");
+            throw new ResourceNotFoundException("Área não encontrada para exclusão.");
         }
     }
     
@@ -49,6 +50,6 @@ public class AreaCultivoService {
 
                 return areaCultivoRepository.save(areaExistente);
             })
-            .orElseThrow(() -> new RuntimeException("Área não encontrada para edição."));
+            .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada para edição."));
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
 import br.com.cultiva.cultivamais.model.Planta;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
 import io.micrometer.common.lang.NonNull;
@@ -29,7 +30,7 @@ public class PlantaService {
         if (plantaRepository.existsById(id)) {
             plantaRepository.deleteById(id);
         } else {
-            throw new RuntimeException("Planta não encontrada.");
+            throw new ResourceNotFoundException("Planta não encontrada.");
         }
     }    
 
@@ -43,6 +44,6 @@ public class PlantaService {
                 plantaExistente.setCicloMedioDias(dadosAtualizados.getCicloMedioDias());
                 return plantaRepository.save(plantaExistente);
             })
-            .orElseThrow(() -> new RuntimeException("Planta não encontrada para edição."));
+            .orElseThrow(() -> new ResourceNotFoundException("Planta não encontrada para edição."));
     }
 }

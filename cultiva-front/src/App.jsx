@@ -6,8 +6,7 @@ import Plantas from "./pages/Plantas";
 import Cultivos from "./pages/Cultivos";
 import Dashboard from "./pages/Dashboard";
 import Administracao from "./pages/Administracao";
-
-const Relatorios = () => <h1>📈 Relatórios Gerenciais (Em construção)</h1>;
+import Relatorios from "./pages/Relatorios";
 
 const App = () => (
   <BrowserRouter>

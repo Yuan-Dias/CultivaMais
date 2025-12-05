@@ -1,9 +1,10 @@
 package br.com.cultiva.cultivamais.service;
 
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import br.com.cultiva.cultivamais.model.*;
+import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
+import br.com.cultiva.cultivamais.model.AreaCultivo;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
 import io.micrometer.common.lang.NonNull;
 
@@ -21,12 +22,8 @@ public class GeolocalizacaoService {
     @SuppressWarnings("null")
     public DadosSolares buscarDadosExternos(@NonNull Long idAreaCultivo) {
 
-        AreaCultivo area = areaCultivoRepository.findById(idAreaCultivo).orElse(null);
-
-        if(area == null) {
-            System.err.println("Área com ID "+ idAreaCultivo +" não encontrada.");
-            return null;
-        }
+        AreaCultivo area = areaCultivoRepository.findById(idAreaCultivo)
+            .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada para geolocalização com ID: " + idAreaCultivo));
 
         double latitudeArea = area.getLatitudeArea();
         double longitudeArea = area.getLongitudeArea();
