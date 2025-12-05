@@ -16,9 +16,9 @@ const Dashboard = () => {
     const carregarDados = async () => {
         try {
         const [areasRes, plantasRes, cultivosRes] = await Promise.all([
-            fetch('http://localhost:8080/api/areas'),
-            fetch('http://localhost:8080/api/plantas'),
-            fetch('http://localhost:8080/api/cultivos')
+            fetch('http://localhost:8090/api/areas'),
+            fetch('http://localhost:8090/api/plantas'),
+            fetch('http://localhost:8090/api/cultivos')
         ]);
 
         const areas = await areasRes.json();
@@ -36,7 +36,7 @@ const Dashboard = () => {
             const areaPrincipal = areas[0];
             setNomeAreaClima(areaPrincipal.nomeArea);
             
-            const climaRes = await fetch(`http://localhost:8080/api/areas/${areaPrincipal.idArea}/clima`);
+            const climaRes = await fetch(`http://localhost:8090/api/areas/${areaPrincipal.idArea}/clima`);
             if (climaRes.ok) {
             const dadosClima = await climaRes.json();
             setClima(dadosClima);

@@ -19,7 +19,7 @@ const Areas = () => {
 
   // --- 1. Carregar Dados (GET) ---
   const carregarAreas = () => {
-    fetch('http://localhost:8080/api/areas')
+    fetch('http://localhost:8090/api/areas')
       .then(res => res.json())
       .then(dados => setAreas(dados))
       .catch(err => console.error("Erro:", err));
@@ -63,8 +63,8 @@ const Areas = () => {
   const salvarArea = (e) => {
     e.preventDefault();
     const url = editandoId 
-        ? `http://localhost:8080/api/areas/${editandoId}` 
-        : 'http://localhost:8080/api/areas';            
+        ? `http://localhost:8090/api/areas/${editandoId}` 
+        : 'http://localhost:8090/api/areas';            
     const metodo = editandoId ? 'PUT' : 'POST';
 
     fetch(url, {
@@ -85,7 +85,7 @@ const Areas = () => {
   // --- 5. Excluir (DELETE) ---
   const excluirArea = (id, nome) => {
     if (confirm(`Apagar a área "${nome}" e todos os seus cultivos?`)) {
-      fetch(`http://localhost:8080/api/areas/${id}`, { method: 'DELETE' })
+      fetch(`http://localhost:8090/api/areas/${id}`, { method: 'DELETE' })
         .then(res => {
           if (res.ok) carregarAreas();
           else alert('Erro ao excluir.');
@@ -99,7 +99,7 @@ const Areas = () => {
       setIdAreaSelecionada(null);
       return;
     }
-    fetch(`http://localhost:8080/api/relatorios/colheita/${idArea}`)
+    fetch(`http://localhost:8090/api/relatorios/colheita/${idArea}`)
       .then(r => r.json())
       .then(d => { setCultivos(d); setIdAreaSelecionada(idArea); });
   };

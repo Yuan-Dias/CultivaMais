@@ -12,7 +12,7 @@ const Administracao = () => {
   });
 
   const carregarUsuarios = () => {
-    fetch('http://localhost:8080/api/usuarios')
+    fetch('http://localhost:8090/api/usuarios')
       .then(res => res.json())
       .then(data => setUsuarios(data))
       .catch(err => console.error("Erro ao buscar usuários:", err));
@@ -24,7 +24,7 @@ const Administracao = () => {
 
   const salvarUsuario = (e) => {
     e.preventDefault();
-    fetch('http://localhost:8080/api/usuarios', {
+    fetch('http://localhost:8090/api/usuarios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novoUsuario)
@@ -41,7 +41,7 @@ const Administracao = () => {
 
   const excluirUsuario = (id, nome) => {
     if (confirm(`Tem a certeza que deseja remover o utilizador "${nome}"?`)) {
-        fetch(`http://localhost:8080/api/usuarios/${id}`, {
+        fetch(`http://localhost:8090/api/usuarios/${id}`, {
             method: 'DELETE'
         }).then(res => {
             if (res.ok) {

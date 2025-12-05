@@ -18,7 +18,7 @@ const Plantas = () => {
 
   // --- 1. Carregar Dados ---
   const carregarPlantas = () => {
-    fetch('http://localhost:8080/api/plantas')
+    fetch('http://localhost:8090/api/plantas')
       .then(res => res.json())
       .then(dados => setPlantas(dados))
       .catch(err => console.error("Erro ao buscar plantas:", err));
@@ -58,8 +58,8 @@ const Plantas = () => {
     e.preventDefault();
     
     const url = editandoId 
-        ? `http://localhost:8080/api/plantas/${editandoId}` // Edição
-        : 'http://localhost:8080/api/plantas';            // Criação
+        ? `http://localhost:8090/api/plantas/${editandoId}` // Edição
+        : 'http://localhost:8090/api/plantas';            // Criação
     
     const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -82,7 +82,7 @@ const Plantas = () => {
   // --- 5. Excluir (DELETE) ---
   const excluirPlanta = (id, nome) => {
     if (confirm(`Tem a certeza que deseja remover a planta "${nome}"?`)) {
-        fetch(`http://localhost:8080/api/plantas/${id}`, {
+        fetch(`http://localhost:8090/api/plantas/${id}`, {
             method: 'DELETE'
         }).then(res => {
             if (res.ok) {

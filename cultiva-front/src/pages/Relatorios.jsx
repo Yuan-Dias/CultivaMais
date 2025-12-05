@@ -11,7 +11,7 @@ const Relatorios = () => {
   const [historicoPragas, setHistoricoPragas] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/areas')
+    fetch('http://localhost:8090/api/areas')
       .then(res => res.json())
       .then(data => setAreas(data))
       .catch(err => console.error("Erro ao carregar áreas:", err));
@@ -30,11 +30,11 @@ const Relatorios = () => {
   const analisarCultivo = (cultivo) => {
     setCultivoSelecionado(cultivo);
 
-    fetch(`http://localhost:8080/api/relatorios/agua/${cultivo.idCultivo}`)
+    fetch(`http://localhost:8090/api/relatorios/agua/${cultivo.idCultivo}`)
       .then(res => res.json())
       .then(dado => setTotalAgua(dado));
 
-    fetch(`http://localhost:8080/api/relatorios/pragas/${cultivo.idCultivo}`)
+    fetch(`http://localhost:8090/api/relatorios/pragas/${cultivo.idCultivo}`)
       .then(res => res.json())
       .then(lista => setHistoricoPragas(lista));
   };

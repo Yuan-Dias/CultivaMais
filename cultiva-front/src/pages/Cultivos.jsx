@@ -28,9 +28,9 @@ const Cultivos = () => {
   });
 
   const carregarTudo = () => {
-    fetch('http://localhost:8080/api/areas').then(r => r.json()).then(setAreas);
-    fetch('http://localhost:8080/api/plantas').then(r => r.json()).then(setPlantas);
-    fetch('http://localhost:8080/api/cultivos').then(r => r.json()).then(setCultivos);
+    fetch('http://localhost:8090/api/areas').then(r => r.json()).then(setAreas);
+    fetch('http://localhost:8090/api/plantas').then(r => r.json()).then(setPlantas);
+    fetch('http://localhost:8090/api/cultivos').then(r => r.json()).then(setCultivos);
   };
 
   useEffect(() => {
@@ -77,14 +77,14 @@ const Cultivos = () => {
         observacaoCultivo: novoCultivo.observacaoCultivo
       };
 
-      fetch(`http://localhost:8080/api/cultivos/${editandoId}`, {
+      fetch(`http://localhost:8090/api/cultivos/${editandoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(corpoAtualizacao)
       }).then(handleResponse);
 
     } else {
-      const url = `http://localhost:8080/api/cultivos?idPlanta=${novoCultivo.idPlanta}&idArea=${novoCultivo.idArea}&quantidadePlantada=${novoCultivo.quantidade}&dataPlantio=${novoCultivo.dataPlantio}`;
+      const url = `http://localhost:8090/api/cultivos?idPlanta=${novoCultivo.idPlanta}&idArea=${novoCultivo.idArea}&quantidadePlantada=${novoCultivo.quantidade}&dataPlantio=${novoCultivo.dataPlantio}`;
       fetch(url, { method: 'POST' }).then(handleResponse);
     }
   };
@@ -103,9 +103,9 @@ const Cultivos = () => {
     e.preventDefault();
     let url = '';
     if (acaoEvento.tipo === 'IRRIGACAO') {
-      url = `http://localhost:8080/api/eventos/irrigacao?cultivoId=${acaoEvento.id}&volume=${dadosEvento.volume}&metodo=${dadosEvento.metodo}&obs=${dadosEvento.obs}&dataHora=${dadosEvento.dataHora}`;
+      url = `http://localhost:8090/api/eventos/irrigacao?cultivoId=${acaoEvento.id}&volume=${dadosEvento.volume}&metodo=${dadosEvento.metodo}&obs=${dadosEvento.obs}&dataHora=${dadosEvento.dataHora}`;
     } else {
-      url = `http://localhost:8080/api/eventos/praga?cultivoId=${acaoEvento.id}&nome=${dadosEvento.nome}&nivel=${dadosEvento.nivel}&obs=${dadosEvento.obs}&dataHora=${dadosEvento.dataHora}`;
+      url = `http://localhost:8090/api/eventos/praga?cultivoId=${acaoEvento.id}&nome=${dadosEvento.nome}&nivel=${dadosEvento.nivel}&obs=${dadosEvento.obs}&dataHora=${dadosEvento.dataHora}`;
     }
 
     fetch(url, { method: 'POST' })
@@ -130,7 +130,7 @@ const Cultivos = () => {
 
   const excluirCultivo = (id) => {
     if (confirm("Tem a certeza que deseja remover este cultivo e todo o seu histórico?")) {
-        fetch(`http://localhost:8080/api/cultivos/${id}`, { method: 'DELETE' })
+        fetch(`http://localhost:8090/api/cultivos/${id}`, { method: 'DELETE' })
             .then(res => {
                 if (res.ok) {
                     carregarTudo();
