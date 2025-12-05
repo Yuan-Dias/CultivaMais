@@ -24,6 +24,7 @@ export const DashboardLayout = ({ children }) => {
           <Link to="/areas" style={linkStyle}><Map size={20}/> Áreas</Link>
           <Link to="/plantas" style={linkStyle}><Sprout size={20}/> Plantas</Link>
           <Link to="/cultivos" style={linkStyle}><Tractor size={20}/> Cultivos</Link>
+          <Link to="/tarefas" style={linkStyle}><ClipboardList size={20}/> Tarefas</Link>
           <Link to="/relatorios" style={linkStyle}><ClipboardList size={20}/> Relatórios</Link>
           
           {/* LINHA NOVA: Divisor e Link de Admin */}
