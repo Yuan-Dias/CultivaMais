@@ -1,3 +1,6 @@
+/* =========================================
+   GLOBAL & LAYOUT
+   ========================================= */
 .container {
   padding: 40px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -5,6 +8,18 @@
   min-height: 100vh;
 }
 
+.erro {
+  color: red;
+  text-align: center;
+  font-weight: bold;
+  background: #ffebee;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+/* =========================================
+   TIPOGRAFIA
+   ========================================= */
 .titulo {
   color: #2e7d32;
   text-align: center;
@@ -16,6 +31,66 @@
   color: #666;
 }
 
+/* =========================================
+   COMPONENTES: BOTÕES GERAIS
+   ========================================= */
+.btn-primary {
+  background-color: #2e7d32;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background-color: #1b5e20;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ccc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* =========================================
+   COMPONENTES: MODAL (DIALOG)
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* =========================================
+   PÁGINAS: LISTAGENS (ÁREAS, PLANTAS, CULTIVOS)
+   ========================================= */
 .grid-areas {
   display: grid;
   gap: 20px;
@@ -69,15 +144,7 @@
   background-color: #1b5e20;
 }
 
-.erro {
-  color: red;
-  text-align: center;
-  font-weight: bold;
-  background: #ffebee;
-  padding: 10px;
-  border-radius: 8px;
-}
-
+/* Lista expandida dentro do cartão */
 .lista-cultivos {
   width: 100%;
   margin-top: 15px;
@@ -93,7 +160,137 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Grid de Resumo (Stats) */
+/* =========================================
+   PÁGINA: DASHBOARD (ESTILO MODERNO)
+   ========================================= */
+
+/* Header do Dashboard */
+.dashboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.dashboard-subtitle {
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Banner de Sugestão */
+.dashboard-banner {
+  background: linear-gradient(to right, rgba(22, 163, 74, 0.1), rgba(59, 130, 246, 0.1), rgba(234, 179, 8, 0.1));
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.banner-icon {
+  background-color: rgba(22, 163, 74, 0.2);
+  padding: 0.75rem;
+  border-radius: 50%;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cores de Texto e Bordas */
+.text-primary { color: #16a34a; }
+.text-accent { color: #eab308; } /* Amarelo/Laranja */
+.text-secondary { color: #0284c7; } /* Azul */
+.text-muted-foreground { color: #64748b; }
+
+/* Grid de 4 Colunas */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Estilo simplificado para cards pequenos */
+.stat-card-simple {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.stat-card-simple:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-card-footer {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+.icon-circle {
+  background-color: rgba(22, 163, 74, 0.2);
+  padding: 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+}
+
+.banner-content h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
+}
+
+.banner-content p {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+/* Grids de Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -101,6 +298,7 @@
   margin-bottom: 30px;
 }
 
+/* Cartões de Estatística (Simples) */
 .stat-card {
   background: white;
   padding: 20px;
@@ -109,10 +307,44 @@
   border: 1px solid #eee;
 }
 
+/* Cartões de Estatística (Modernos) */
+.stat-card-modern {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.stat-card-modern:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Elementos internos dos Cards de Estatística */
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.stat-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
 .stat-label {
   font-size: 0.85rem;
   color: #666;
   font-weight: 500;
+}
+
+.stat-number {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #16a34a; /* Primary Green */
 }
 
 .stat-value {
@@ -122,52 +354,17 @@
   margin-top: 5px;
 }
 
-/* Modal (Dialog) */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s;
+.stat-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
 }
 
-.modal-content {
+/* Container de Gráficos */
+.chart-card {
   background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  animation: slideUp 0.3s;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.btn-primary {
-  background-color: #2e7d32;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.btn-primary:hover { background-color: #1b5e20; }
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid #ccc;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
