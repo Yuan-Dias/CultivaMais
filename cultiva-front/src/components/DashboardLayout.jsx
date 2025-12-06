@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Map, 
+  Home, 
+  MapPin, 
   Sprout, 
-  Tractor, 
-  ClipboardList, 
-  ListTodo, 
-  Users, 
+  Wheat, 
+  BarChart3, 
+  CheckSquare, 
+  Shield, 
   LogOut, 
   Bell, 
   User 
@@ -65,16 +65,16 @@ export const DashboardLayout = ({ children, onLogout }) => {
 
         {/* Navegação */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, padding: '20px 10px' }}>
-          <Link to="/" style={getLinkStyle('/')}><LayoutDashboard size={20}/> Dashboard</Link>
-          <Link to="/areas" style={getLinkStyle('/areas')}><Map size={20}/> Áreas</Link>
+          <Link to="/" style={getLinkStyle('/')}><Home size={20}/> Dashboard</Link>
+          <Link to="/areas" style={getLinkStyle('/areas')}><MapPin size={20}/> Áreas</Link>
           <Link to="/plantas" style={getLinkStyle('/plantas')}><Sprout size={20}/> Plantas</Link>
-          <Link to="/cultivos" style={getLinkStyle('/cultivos')}><Tractor size={20}/> Cultivos</Link>
-          <Link to="/tarefas" style={getLinkStyle('/tarefas')}><ListTodo size={20}/> Tarefas</Link>
-          <Link to="/relatorios" style={getLinkStyle('/relatorios')}><ClipboardList size={20}/> Relatórios</Link>
+          <Link to="/cultivos" style={getLinkStyle('/cultivos')}><Wheat size={20}/> Cultivos</Link>
+          <Link to="/tarefas" style={getLinkStyle('/tarefas')}><CheckSquare size={20}/> Tarefas</Link>
+          <Link to="/relatorios" style={getLinkStyle('/relatorios')}><BarChart3 size={20}/> Relatórios</Link>
           
           <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>
           
-          <Link to="/admin" style={getLinkStyle('/admin')}><Users size={20}/> Utilizadores</Link>
+          <Link to="/admin" style={getLinkStyle('/admin')}><Shield size={20}/> Administração</Link>
         </nav>
 
         {/* Logout */}

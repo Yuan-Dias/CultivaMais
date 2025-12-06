@@ -1,6 +1,10 @@
 /* =========================================
    GLOBAL & LAYOUT
    ========================================= */
+body, * {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 .container {
   padding: 40px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
