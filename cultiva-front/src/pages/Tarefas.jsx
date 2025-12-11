@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
 import '../App.css';
-import { Plus, Calendar, Trash2, ListTodo, User } from 'lucide-react';
+import { 
+    Plus, Calendar, Trash2, ListTodo, User, 
+    CheckCircle2, Clock, AlertCircle, Tag 
+} from 'lucide-react';
 
 const Tarefas = () => {
-  const [tarefas, setTarefas] = useState([]);
-  const [usuarios, setUsuarios] = useState([]); // Lista de utilizadores para o select
+  // Removi o 'tarefas' original para sumir o erro de variável não usada
+  // Agora usamos apenas o filtradas para controlar a lista
+  const [tarefasFiltradas, setTarefasFiltradas] = useState([]);
+  
+  const [usuarios, setUsuarios] = useState([]);
   const [modalAberto, setModalAberto] = useState(false);
   
+  // --- SIMULAÇÃO DE USUÁRIO LOGADO ---
+  const USUARIO_ATUAL_MOCK = {
+      id: 1, // ID do usuário logado
+      funcao: 'ADMIN' // Mude para 'COMUM' para testar a filtragem
+  };
+
   // Estado do Formulário
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: '',
@@ -14,18 +26,35 @@ const Tarefas = () => {
     prioridade: 'MEDIA',
     categoria: '',
     dataPrazo: '',
-    idResponsavel: '' // Novo campo para vincular usuário
+    idResponsavel: '' 
   });
 
-  // --- 1. Carregar Dados ---
+  // --- 1. Definição da Lógica de Filtro (Movi para cima!) ---
+  const filtrarTarefasPorUsuario = (todasTarefas) => {
+      // Se for ADMIN, vê tudo.
+      if (USUARIO_ATUAL_MOCK.funcao === 'ADMIN') {
+          setTarefasFiltradas(todasTarefas);
+      } else {
+          // Se for COMUM, vê apenas as atribuídas a ele
+          const minhas = todasTarefas.filter(t => 
+              t.responsavel && t.responsavel.idUsuario === USUARIO_ATUAL_MOCK.id
+          );
+          setTarefasFiltradas(minhas);
+      }
+  };
+
+  // --- 2. Carregar Dados (Agora chama a função que já existe acima) ---
   const carregarDados = () => {
     // Busca as tarefas
     fetch('http://localhost:8090/api/tarefas')
       .then(r => r.json())
-      .then(setTarefas)
+      .then(data => {
+          // Aqui chamamos o filtro passando os dados brutos da API
+          filtrarTarefasPorUsuario(data);
+      })
       .catch(err => console.error("Erro ao buscar tarefas:", err));
 
-    // Busca os usuários para preencher o dropdown
+    // Busca os usuários
     fetch('http://localhost:8090/api/usuarios')
       .then(r => r.json())
       .then(setUsuarios)
@@ -34,15 +63,19 @@ const Tarefas = () => {
 
   useEffect(() => {
     carregarDados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- 2. Salvar Tarefa (POST) ---
+  // --- 3. Salvar Tarefa ---
   const salvarTarefa = (e) => {
     e.preventDefault();
     
-    // O ID do responsável vai na URL (Query Param), o resto vai no JSON (Body)
-    // Nota: Se idResponsavel for vazio, o Java vai entender como null (tarefa sem dono)
-    const url = `http://localhost:8090/api/tarefas?idResponsavel=${novaTarefa.idResponsavel}`;
+    // Regra: Se não for admin, atribui a tarefa a si mesmo automaticamente
+    const responsavelFinal = USUARIO_ATUAL_MOCK.funcao === 'ADMIN' 
+        ? novaTarefa.idResponsavel 
+        : USUARIO_ATUAL_MOCK.id;
+
+    const url = `http://localhost:8090/api/tarefas?idResponsavel=${responsavelFinal}`;
     
     fetch(url, {
       method: 'POST',
@@ -56,17 +89,16 @@ const Tarefas = () => {
       }) 
     }).then(res => {
       if (res.ok) {
-        carregarDados(); // Recarrega a lista
-        setModalAberto(false); // Fecha o modal
-        // Limpa o formulário
+        carregarDados();
+        setModalAberto(false);
         setNovaTarefa({ titulo: '', descricao: '', prioridade: 'MEDIA', categoria: '', dataPrazo: '', idResponsavel: '' });
       } else {
-        alert('Erro ao salvar tarefa. Verifique os dados.');
+        alert('Erro ao salvar tarefa.');
       }
     });
   };
 
-  // --- 3. Alternar Conclusão (PUT) ---
+  // --- 4. Alternar Conclusão ---
   const toggleConclusao = (id) => {
     fetch(`http://localhost:8090/api/tarefas/${id}/concluir`, { method: 'PUT' })
       .then(res => {
@@ -74,7 +106,7 @@ const Tarefas = () => {
       });
   };
 
-  // --- 4. Excluir Tarefa (DELETE) ---
+  // --- 5. Excluir Tarefa ---
   const excluirTarefa = (id) => {
     if (confirm('Tem a certeza que deseja apagar esta tarefa?')) {
       fetch(`http://localhost:8090/api/tarefas/${id}`, { method: 'DELETE' })
@@ -82,130 +114,162 @@ const Tarefas = () => {
     }
   };
 
-  // Cálculos para o Resumo
-  const pendentes = tarefas.filter(t => !t.concluida).length;
-  const concluidasTotal = tarefas.filter(t => t.concluida).length;
-  const altaPrioridade = tarefas.filter(t => t.prioridade === 'ALTA' && !t.concluida).length;
+  // --- Separação Visual ---
+  const tarefasPendentes = tarefasFiltradas.filter(t => !t.concluida);
+  const tarefasConcluidas = tarefasFiltradas.filter(t => t.concluida);
 
-  const getBadgeStyle = (prio) => {
-    if (prio === 'ALTA') return { backgroundColor: '#fee2e2', color: '#dc2626' };
-    if (prio === 'MEDIA') return { backgroundColor: '#ffedd5', color: '#ea580c' };
-    return { backgroundColor: '#dcfce7', color: '#166534' };
+  const statsPendentes = tarefasPendentes.length;
+  const statsAltaPrio = tarefasPendentes.filter(t => t.prioridade === 'ALTA').length;
+
+  const getPriorityClass = (prio) => {
+      if (prio === 'ALTA') return 'prio-alta';
+      if (prio === 'MEDIA') return 'prio-media';
+      return 'prio-baixa';
   };
 
   return (
-    <div className="lovable-container animate-fade-in">
+    <div className="animate-fade-in" style={{ padding: '0 10px' }}>
       
       {/* Header */}
-      <div className="lovable-header">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h1 className="lovable-title">Tarefas</h1>
-          <p className="lovable-subtitle">Atribua e gerencie atividades da equipa.</p>
+           <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Tarefas e Alertas</h1>
+           <p style={{ color: '#64748b', marginTop: '4px' }}>
+               {USUARIO_ATUAL_MOCK.funcao === 'ADMIN' 
+                   ? 'Visão geral de todas as atividades.' 
+                   : 'Gerencie suas atividades diárias.'}
+           </p>
         </div>
-        
-        {/* Botão Nova Tarefa */}
-        <button className="btn-lovable-primary" onClick={() => setModalAberto(true)}>
-          <Plus size={18} /> Nova Tarefa
+        <button className="btn-primary" onClick={() => setModalAberto(true)}>
+            <Plus size={20} /> Nova Tarefa
         </button>
       </div>
 
       {/* Resumo (Stats) */}
-      <div className="stats-grid">
-        <div className="lovable-card">
-            <div className="text-muted" style={{fontSize:'0.875rem'}}>Pendentes</div>
-            <div className="stat-value" style={{color: '#eab308'}}>{pendentes}</div>
+      <div className="kpi-grid" style={{ marginBottom: '32px' }}>
+        <div className="kpi-card">
+            <div className="kpi-header">
+                <span className="kpi-title">Pendentes</span>
+                <div className="icon-box bg-orange-light"><Clock size={20} /></div>
+            </div>
+            <div className="kpi-value">{statsPendentes}</div>
+            <div className="kpi-subtext">Tarefas a fazer</div>
         </div>
-        <div className="lovable-card">
-            <div className="text-muted" style={{fontSize:'0.875rem'}}>Concluídas</div>
-            <div className="stat-value" style={{color: '#16a34a'}}>{concluidasTotal}</div>
+        <div className="kpi-card">
+            <div className="kpi-header">
+                <span className="kpi-title">Alta Prioridade</span>
+                <div className="icon-box bg-red-light"><AlertCircle size={20} /></div>
+            </div>
+            <div className="kpi-value" style={{color: statsAltaPrio > 0 ? '#dc2626' : 'inherit'}}>{statsAltaPrio}</div>
+            <div className="kpi-subtext">Requerem atenção</div>
         </div>
-        <div className="lovable-card">
-            <div className="text-muted" style={{fontSize:'0.875rem'}}>Prioridade Alta</div>
-            <div className="stat-value" style={{color: '#dc2626'}}>{altaPrioridade}</div>
+        <div className="kpi-card">
+            <div className="kpi-header">
+                <span className="kpi-title">Concluídas</span>
+                <div className="icon-box bg-green-light"><CheckCircle2 size={20} /></div>
+            </div>
+            <div className="kpi-value">{tarefasConcluidas.length}</div>
+            <div className="kpi-subtext">Total histórico</div>
         </div>
       </div>
 
-      {/* Lista de Tarefas */}
-      <div className="lovable-card" style={{padding: '0'}}>
-        <div style={{padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display:'flex', alignItems:'center', gap:'10px'}}>
-            <ListTodo size={20} className="text-muted"/> 
-            <h3 className="card-title">Lista de Atividades</h3>
-        </div>
-        
-        <div style={{padding: '1rem'}}>
-            {tarefas.length === 0 ? (
-                <p style={{textAlign:'center', color:'#999', padding:'2rem'}}>Nenhuma tarefa cadastrada.</p>
-            ) : (
-                tarefas.map(tarefa => (
-                    <div key={tarefa.id} style={{
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        padding: '1rem', 
-                        borderBottom: '1px solid #f1f5f9',
-                        transition: 'background 0.2s'
-                    }}>
-                        
-                        {/* Lado Esquerdo: Checkbox e Textos */}
-                        <div style={{display: 'flex', alignItems: 'flex-start', gap: '1rem'}}>
-                            <input 
-                                type="checkbox" 
-                                className="checkbox-input" 
-                                checked={tarefa.concluida} 
-                                onChange={() => toggleConclusao(tarefa.id)}
-                                style={{marginTop: '5px'}}
-                            />
-                            <div style={{opacity: tarefa.concluida ? 0.5 : 1, textDecoration: tarefa.concluida ? 'line-through' : 'none'}}>
-                                <h4 style={{margin: '0 0 4px 0', fontSize: '1rem', color: '#0f172a'}}>{tarefa.titulo}</h4>
-                                <p style={{margin: 0, fontSize: '0.875rem', color: '#64748b'}}>{tarefa.descricao}</p>
-                                
-                                <div style={{display: 'flex', gap: '10px', marginTop: '8px', fontSize: '0.75rem', color: '#64748b', flexWrap: 'wrap'}}>
-                                    <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                        <Calendar size={12}/> {tarefa.dataPrazo ? new Date(tarefa.dataPrazo).toLocaleDateString() : 'Sem prazo'}
-                                    </span>
-                                    <span style={{background:'#f1f5f9', padding:'2px 8px', borderRadius:'4px'}}>
-                                        {tarefa.categoria}
-                                    </span>
-                                    
-                                    {/* MOSTRA QUEM É O RESPONSÁVEL */}
-                                    {tarefa.responsavel ? (
-                                        <span style={{display: 'flex', alignItems: 'center', gap: '4px', background:'#eff6ff', color:'#1e40af', padding:'2px 8px', borderRadius:'4px'}}>
-                                            <User size={12}/> {tarefa.responsavel.nomeUsuario}
-                                        </span>
-                                    ) : (
-                                        <span style={{display: 'flex', alignItems: 'center', gap: '4px', background:'#f1f5f9', padding:'2px 8px', borderRadius:'4px'}}>
-                                            <User size={12}/> Sem responsável
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Lado Direito: Badge e Botão Excluir */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px'}}>
-                            <span className="badge" style={getBadgeStyle(tarefa.prioridade)}>
+      {/* --- LISTA DE TAREFAS PENDENTES --- */}
+      <div className="task-list-container">
+        {tarefasPendentes.length === 0 ? (
+            <div style={{textAlign:'center', padding:'40px', background:'white', borderRadius:'12px', border:'1px dashed #e2e8f0', color:'#94a3b8'}}>
+                <ListTodo size={48} style={{marginBottom:'16px', opacity:0.5}} />
+                <p>Nenhuma tarefa pendente. Bom trabalho!</p>
+            </div>
+        ) : (
+            tarefasPendentes.map(tarefa => (
+                <div key={tarefa.id} className="task-item">
+                    <input 
+                        type="checkbox" 
+                        className="custom-checkbox"
+                        checked={tarefa.concluida} 
+                        onChange={() => toggleConclusao(tarefa.id)}
+                    />
+                    
+                    <div className="task-content">
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                            <h4 className="task-title">{tarefa.titulo}</h4>
+                            <span className={`priority-badge ${getPriorityClass(tarefa.prioridade)}`}>
                                 {tarefa.prioridade}
                             </span>
+                        </div>
+                        
+                        <p className="task-desc">{tarefa.descricao || 'Sem descrição.'}</p>
+                        
+                        <div className="task-meta">
+                            <span className="meta-tag">
+                                <Calendar size={14}/> 
+                                {tarefa.dataPrazo ? new Date(tarefa.dataPrazo).toLocaleString() : 'Sem prazo'}
+                            </span>
+                            <span className="meta-tag">
+                                <Tag size={14}/> {tarefa.categoria || 'Geral'}
+                            </span>
                             
-                            <button 
-                                onClick={() => excluirTarefa(tarefa.id)}
-                                style={{border: 'none', background: 'transparent', color: '#cbd5e1', cursor: 'pointer'}}
-                                title="Excluir"
-                            >
-                                <Trash2 size={16} className="hover:text-red-500" />
-                            </button>
+                            {USUARIO_ATUAL_MOCK.funcao === 'ADMIN' && (
+                                <span className="meta-tag" style={{backgroundColor: '#eff6ff', color: '#1e40af'}}>
+                                    <User size={14}/> 
+                                    {tarefa.responsavel ? tarefa.responsavel.nomeUsuario : 'Sem dono'}
+                                </span>
+                            )}
                         </div>
                     </div>
-                ))
-            )}
-        </div>
+
+                    <button onClick={() => excluirTarefa(tarefa.id)} className="btn-icon-sm danger" title="Excluir">
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            ))
+        )}
       </div>
+
+      {/* --- LISTA DE TAREFAS CONCLUÍDAS --- */}
+      {tarefasConcluidas.length > 0 && (
+          <>
+            <div className="completed-section-title">
+                <CheckCircle2 size={16} /> Concluídas
+            </div>
+            
+            <div className="task-list-container">
+                {tarefasConcluidas.map(tarefa => (
+                    <div key={tarefa.id} className="task-item completed">
+                        <input 
+                            type="checkbox" 
+                            className="custom-checkbox"
+                            checked={tarefa.concluida} 
+                            onChange={() => toggleConclusao(tarefa.id)}
+                        />
+                        <div className="task-content">
+                            <h4 className="task-title">{tarefa.titulo}</h4>
+                            <div className="task-meta">
+                                <span className="meta-tag">Concluída</span>
+                                <span className="meta-tag">{tarefa.categoria}</span>
+                            </div>
+                        </div>
+                        <button onClick={() => excluirTarefa(tarefa.id)} className="btn-icon-sm" title="Excluir">
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+          </>
+      )}
 
       {/* --- MODAL DE CADASTRO --- */}
       {modalAberto && (
-        <div className="modal-overlay">
-            <div className="modal-content-modern">
-                <h2 style={{marginTop: 0, marginBottom: '1.5rem', color: '#2e7d32'}}>Nova Tarefa</h2>
+        <div className="modal-modern-overlay">
+            <div className="modal-modern-content">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <h2 className="modal-title">Nova Tarefa</h2>
+                    <button onClick={() => setModalAberto(false)} style={{border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8'}}>
+                        <Plus size={24} style={{transform: 'rotate(45deg)'}} />
+                    </button>
+                </div>
+                <p className="modal-desc">Descreva a atividade e defina um prazo.</p>
+
                 <form onSubmit={salvarTarefa}>
                     <div className="form-group">
                         <label className="form-label">Título</label>
@@ -215,22 +279,24 @@ const Tarefas = () => {
                     
                     <div className="form-group">
                         <label className="form-label">Descrição</label>
-                        <input className="form-input" placeholder="Detalhes..." 
+                        <textarea className="form-input" rows="3" placeholder="Detalhes..." 
                             value={novaTarefa.descricao} onChange={e => setNovaTarefa({...novaTarefa, descricao: e.target.value})} />
                     </div>
 
-                    {/* SELECT DE RESPONSÁVEL */}
-                    <div className="form-group">
-                        <label className="form-label">Atribuir a:</label>
-                        <select className="form-input" value={novaTarefa.idResponsavel} onChange={e => setNovaTarefa({...novaTarefa, idResponsavel: e.target.value})}>
-                            <option value="">-- Selecione um Responsável --</option>
-                            {usuarios.map(u => (
-                                <option key={u.idUsuario} value={u.idUsuario}>
-                                    {u.nomeUsuario} ({u.funcao})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Exibe seleção de responsável APENAS SE FOR ADMIN */}
+                    {USUARIO_ATUAL_MOCK.funcao === 'ADMIN' && (
+                        <div className="form-group">
+                            <label className="form-label">Atribuir a:</label>
+                            <select className="form-select" value={novaTarefa.idResponsavel} onChange={e => setNovaTarefa({...novaTarefa, idResponsavel: e.target.value})}>
+                                <option value="">-- Selecione um Responsável --</option>
+                                {usuarios.map(u => (
+                                    <option key={u.idUsuario} value={u.idUsuario}>
+                                        {u.nomeUsuario} ({u.funcao})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
                         <div className="form-group">
@@ -240,7 +306,7 @@ const Tarefas = () => {
                         </div>
                         <div className="form-group">
                             <label className="form-label">Prioridade</label>
-                            <select className="form-input" value={novaTarefa.prioridade} onChange={e => setNovaTarefa({...novaTarefa, prioridade: e.target.value})}>
+                            <select className="form-select" value={novaTarefa.prioridade} onChange={e => setNovaTarefa({...novaTarefa, prioridade: e.target.value})}>
                                 <option value="BAIXA">Baixa</option>
                                 <option value="MEDIA">Média</option>
                                 <option value="ALTO">Alta</option>
@@ -249,14 +315,14 @@ const Tarefas = () => {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Prazo</label>
+                        <label className="form-label">Prazo Limite</label>
                         <input type="datetime-local" className="form-input" 
                             value={novaTarefa.dataPrazo} onChange={e => setNovaTarefa({...novaTarefa, dataPrazo: e.target.value})} required />
                     </div>
                     
-                    <div style={{display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '2rem'}}>
-                        <button type="button" className="btn-lovable-outline" onClick={() => setModalAberto(false)}>Cancelar</button>
-                        <button type="submit" className="btn-lovable-primary">Salvar</button>
+                    <div className="modal-footer">
+                        <button type="button" className="btn-outline" onClick={() => setModalAberto(false)}>Cancelar</button>
+                        <button type="submit" className="btn-primary">Salvar Tarefa</button>
                     </div>
                 </form>
             </div>

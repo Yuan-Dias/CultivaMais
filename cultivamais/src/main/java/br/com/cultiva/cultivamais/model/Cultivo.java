@@ -79,6 +79,9 @@ public class Cultivo {
     public Planta getPlantaCultivada(){
         return this.plantaCultivada;
     }
+    public Planta getPlanta() {
+        return this.plantaCultivada;
+    }
     public AreaCultivo getAreaCultivo(){
         return this.areaCultivo;
     }
@@ -116,6 +119,9 @@ public class Cultivo {
     }
     public void setPlantaCultivada(Planta plantaCultivada){
         this.plantaCultivada = plantaCultivada;
+    }
+    public void setPlanta(Planta planta) {
+        this.plantaCultivada = planta;
     }
     public void setAreaCultivo(AreaCultivo areaCultivo){
         this.areaCultivo = areaCultivo;
