@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 public class Tarefa {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -12,20 +13,27 @@ public class Tarefa {
     private String titulo;
     private String descricao;
     
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) // Salva como "ALTA", "MEDIA", "BAIXA" no banco
     private Prioridade prioridade;
     
     private String categoria; // Ex: Irrigação, Adubação
-    private LocalDateTime dataPrazo;
+    
+    private LocalDateTime dataPrazo; // Compatível com input datetime-local
+    
     private boolean concluida;
 
     // Relacionamento com Usuário (para atribuir tarefas)
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+    // FetchType.EAGER garante que os dados do usuário venham junto com a tarefa
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "usuario_id") 
     private Usuario responsavel;
 
+    // --- CONSTRUTORES ---
+
+    // Construtor vazio (Obrigatório para o JPA/Hibernate)
     public Tarefa() {}
 
+    // Construtor completo (Facilita criação manual se precisar)
     public Tarefa(String titulo, String descricao, Prioridade prioridade, String categoria, LocalDateTime dataPrazo, Usuario responsavel) {
         this.titulo = titulo;
         this.descricao = descricao;
@@ -36,7 +44,8 @@ public class Tarefa {
         this.concluida = false;
     }
 
-    // Getters
+    // --- GETTERS ---
+    
     public Long getId() { 
         return id; 
     }
@@ -62,7 +71,8 @@ public class Tarefa {
         return responsavel; 
     }
 
-    // Setters
+    // --- SETTERS ---
+    
     public void setId(Long id) { 
         this.id = id; 
     }
