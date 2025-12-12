@@ -4,16 +4,13 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
 
 import br.com.cultiva.cultivamais.model.Usuario;
 import br.com.cultiva.cultivamais.service.UsuarioService;
+import br.com.cultiva.cultivamais.dto.LoginRequest;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -38,5 +35,22 @@ public class UsuarioController {
     public ResponseEntity<Void> excluirUsuario(@PathVariable Long id) {
         usuarioService.excluirUsuario(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Usuario> login(@RequestBody LoginRequest loginRequest) {
+
+        Usuario usuarioLogado = usuarioService.autenticar(
+                loginRequest.getEmail(),
+                loginRequest.getSenha()
+        );
+
+        if (usuarioLogado != null) {
+            // Login Sucesso: Retorna 200 OK e os dados do usuário (incluindo ID e Tipo)
+            return ResponseEntity.ok(usuarioLogado);
+        } else {
+            // Login Falhou: Retorna 401 Unauthorized
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

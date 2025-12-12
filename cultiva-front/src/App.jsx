@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import { Login } from "./pages/Login";
 import { DashboardLayout } from "./components/DashboardLayout";
 
 import Areas from "./pages/Areas";
@@ -12,13 +14,21 @@ import Relatorios from "./pages/Relatorios";
 const App = () => (
   <BrowserRouter>
     <Routes>
-      <Route path="/" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-      <Route path="/areas" element={<DashboardLayout><Areas /></DashboardLayout>} />
-      <Route path="/plantas" element={<DashboardLayout><Plantas /></DashboardLayout>} />
-      <Route path="/cultivos" element={<DashboardLayout><Cultivos /></DashboardLayout>} />
-      <Route path="/tarefas" element={<DashboardLayout><Tarefas /></DashboardLayout>} />
-      <Route path="/relatorios" element={<DashboardLayout><Relatorios /></DashboardLayout>} />
-      <Route path="/admin" element={<DashboardLayout><Administracao /></DashboardLayout>} />
+
+        {/* --- ROTAS PÚBLICAS --- */}
+        {/* Se acessar a raiz "/", joga para o "/login" */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* A tela de Login fica FORA do DashboardLayout para não ter menu lateral */}
+        <Route path="/login" element={<Login />} />
+
+        <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+        <Route path="/areas" element={<DashboardLayout><Areas /></DashboardLayout>} />
+        <Route path="/plantas" element={<DashboardLayout><Plantas /></DashboardLayout>} />
+        <Route path="/cultivos" element={<DashboardLayout><Cultivos /></DashboardLayout>} />
+        <Route path="/tarefas" element={<DashboardLayout><Tarefas /></DashboardLayout>} />
+        <Route path="/relatorios" element={<DashboardLayout><Relatorios /></DashboardLayout>} />
+        <Route path="/admin" element={<DashboardLayout><Administracao /></DashboardLayout>} />
     </Routes>
   </BrowserRouter>
 );
