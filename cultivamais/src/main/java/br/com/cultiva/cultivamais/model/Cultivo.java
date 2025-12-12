@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -32,7 +32,7 @@ public class Cultivo {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "areaCultivo_id")
-    @JsonBackReference(value = "area-cultivos")
+    @JsonIgnoreProperties("cultivos")
     private AreaCultivo areaCultivo;
     private LocalDate dataPlantio;
     private LocalDate previsaoColheita;
@@ -91,9 +91,7 @@ public class Cultivo {
     public LocalDate getPrevisaoColheita(){
         return this.previsaoColheita;
     }
-    public LocalDate getColheitaFinal(){
-        return this.dataColheitaFinal;
-    }
+    public LocalDate getDataColheitaFinal(){ return this.dataColheitaFinal; }
     public EstadoPlanta getEstadoPlanta(){
         return this.estadoPlanta;
     }

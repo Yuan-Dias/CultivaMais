@@ -62,6 +62,7 @@ public class CultivoService {
                 cultivoExistente.setQuantidadePlantada(dadosAtualizados.getQuantidadePlantada());
                 cultivoExistente.setQuantidadeColhida(dadosAtualizados.getQuantidadeColhida());
                 cultivoExistente.setDataPlantio(dadosAtualizados.getDataPlantio());
+                cultivoExistente.setDataColheitaFinal(dadosAtualizados.getDataColheitaFinal());
                 cultivoExistente.setStatusCultivo(dadosAtualizados.getStatusCultivo());
                 cultivoExistente.setEstadoPlanta(dadosAtualizados.getEstadoPlanta());
                 cultivoExistente.setObservacaoCultivo(dadosAtualizados.getObservacaoCultivo());
