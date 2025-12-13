@@ -3,7 +3,7 @@ package br.com.cultiva.cultivamais.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -32,7 +32,7 @@ public class AreaCultivo {
     private String observacaoArea;
 
     @OneToMany(mappedBy = "areaCultivo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference(value = "area-cultivos")
+    @JsonIgnore
     private List<Cultivo> cultivos = new ArrayList<>();
 
     public AreaCultivo (String nomeArea){

@@ -73,29 +73,83 @@ const Cultivos = () => {
         setEditandoId(null);
     };
 
-    // === 3. SALVAR CULTIVO ===
-    const salvarCultivo = (e) => {
+    // === 3. SALVAR CULTIVO (VERSÃO BLINDADA) ===
+    const salvarCultivo = async (e) => {
         e.preventDefault();
 
-        if (editandoId) {
-            const corpoAtualizacao = {
-                quantidadePlantada: formCultivo.quantidadePlantada,
-                dataPlantio: formCultivo.dataPlantio,
-                statusCultivo: formCultivo.statusCultivo,
-                estadoPlanta: formCultivo.estadoPlanta,
-                observacaoCultivo: formCultivo.observacaoCultivo,
-                quantidadeColhida: formCultivo.quantidadeColhida,
-                dataColheitaFinal: formCultivo.dataColheitaFinal || null
+        // 1. CONVERSÃO SEGURA DE NÚMEROS E DATAS
+        // O Java odeia string vazia "" em campos numéricos ou datas.
+
+        // Garante que IDs sejam números inteiros
+        const idAreaNum = parseInt(formCultivo.idArea);
+        const idPlantaNum = parseInt(formCultivo.idPlanta);
+
+        // Garante que quantidade plantada seja número
+        const qtdPlantadaNum = formCultivo.quantidadePlantada ? parseFloat(formCultivo.quantidadePlantada) : 0;
+
+        // Se quantidade colhida for vazia, manda null (ou 0 se preferir)
+        const qtdColhidaNum = formCultivo.quantidadeColhida && formCultivo.quantidadeColhida !== ""
+            ? parseFloat(formCultivo.quantidadeColhida)
+            : null;
+
+        // Se data colheita for vazia, manda null
+        const dataColheitaSegura = formCultivo.dataColheitaFinal === "" ? null : formCultivo.dataColheitaFinal;
+
+        const payload = {
+            // Se estiver editando, é bom mandar o ID do próprio cultivo também
+            idCultivo: editandoId ? parseInt(editandoId) : null,
+
+            quantidadePlantada: qtdPlantadaNum,
+            dataPlantio: formCultivo.dataPlantio,
+            statusCultivo: formCultivo.statusCultivo, // Ex: "ATIVO"
+            estadoPlanta: formCultivo.estadoPlanta,   // Ex: "SAUDAVEL"
+            observacaoCultivo: formCultivo.observacaoCultivo,
+
+            quantidadeColhida: qtdColhidaNum,
+            dataColheitaFinal: dataColheitaSegura,
+
+            // OBJETOS RELACIONADOS
+            // Importante: No Java, Area e Planta devem ser objetos com ID
+            plantaCultivada: { idPlanta: idPlantaNum },
+            areaCultivo: { idArea: idAreaNum }
+        };
+
+        console.log("Enviando Payload:", JSON.stringify(payload));
+
+        try {
+            const url = editandoId
+                ? `http://localhost:8090/api/cultivos/${editandoId}`
+                : `http://localhost:8090/api/cultivos?idPlanta=${idPlantaNum}&idArea=${idAreaNum}&quantidadePlantada=${qtdPlantadaNum}&dataPlantio=${formCultivo.dataPlantio}`;
+
+            // Nota: No POST você usava query params na URL, no PUT usa corpo JSON.
+            // Mantive a lógica original do seu POST, mas ajustei o PUT.
+
+            const options = {
+                method: editandoId ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             };
 
-            fetch(`http://localhost:8090/api/cultivos/${editandoId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(corpoAtualizacao)
-            }).then(handleResponse);
-        } else {
-            const url = `http://localhost:8090/api/cultivos?idPlanta=${formCultivo.idPlanta}&idArea=${formCultivo.idArea}&quantidadePlantada=${formCultivo.quantidadePlantada}&dataPlantio=${formCultivo.dataPlantio}`;
-            fetch(url, { method: 'POST' }).then(handleResponse);
+            // Se for PUT, adiciona o corpo. Se for POST do jeito antigo (query param), não precisa body
+            if (editandoId) {
+                options.body = JSON.stringify(payload);
+            }
+
+            const response = await fetch(url, options);
+
+            if (response.ok) {
+                carregarTudo();
+                fecharModal();
+                alert("Salvo com sucesso!");
+            } else {
+                const errorText = await response.text();
+                console.error("Erro no servidor:", errorText);
+                alert(`Erro ao salvar: ${response.status}`);
+            }
+        } catch (error) {
+            console.error("Erro de rede:", error);
+            alert("Erro de conexão com o servidor.");
         }
     };
 

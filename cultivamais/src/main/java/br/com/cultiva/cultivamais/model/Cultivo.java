@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -124,9 +125,11 @@ public class Cultivo {
     public void setAreaCultivo(AreaCultivo areaCultivo){
         this.areaCultivo = areaCultivo;
     }
+    @JsonFormat(pattern = "yyyy-MM-dd")
     public void setDataPlantio(LocalDate dataPlantio){
         this.dataPlantio = dataPlantio;
     }
+    @JsonFormat(pattern = "yyyy-MM-dd")
     public void setDataColheitaFinal(LocalDate dataColheitaFinal){
         this.dataColheitaFinal = dataColheitaFinal;
     }
@@ -148,6 +151,7 @@ public class Cultivo {
     public void setEventosRegistrados(List<Evento> eventosRegistrados){
         this.eventosRegistrados = eventosRegistrados;
     }
+    @JsonFormat(pattern = "yyyy-MM-dd")
     public void setPrevisaoColheita(LocalDate previsaoColheita) { 
         this.previsaoColheita = previsaoColheita; 
     }

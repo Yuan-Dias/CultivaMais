@@ -20,8 +20,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
 
-            {/* --- ROTAS PROTEGIDAS (O Porteiro age aqui) --- */}
-            {/* Tudo que estiver dentro deste Route só abre se tiver logado */}
+            {/* --- ROTAS PROTEGIDAS --- */}
             <Route element={<PrivateRoute />}>
 
                 <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />

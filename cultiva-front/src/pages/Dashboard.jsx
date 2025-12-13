@@ -11,18 +11,25 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area
 } from 'recharts';
 
+/**
+ * Definições de Tipos para ajudar a IDE (JSDoc)
+ * @typedef {Object} Tarefa
+ * @property {boolean} concluida
+ *
+ * @typedef {Object} Clima
+ * @property {number} incidenciaSolarMedia
+ * @property {number} umidadeMedia
+ */
+
 // --- COMPONENTES VISUAIS INTERNOS ---
 
-const StatCard = (props) => {
-    const { title, value, subtext, icon, colorClass } = props;
-    const IconComponent = icon;
-
+const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => {
     return (
         <div className="kpi-card">
             <div className="kpi-header">
                 <span className="kpi-title">{title}</span>
                 <div className={`icon-box ${colorClass}`}>
-                    {IconComponent && <IconComponent size={20} />}
+                    {Icon && <Icon size={20} />}
                 </div>
             </div>
             <div>
@@ -33,17 +40,13 @@ const StatCard = (props) => {
     );
 };
 
-// Container de Gráfico (Com correção de width/height)
-const ChartCard = (props) => {
-    const { title, subtitle, icon, children, headerControls } = props;
-    const IconComponent = icon;
-
+const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) => {
     return (
         <div className="chart-card-container" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div className="chart-header">
-                <div style={{display: 'flex', flexDirection: 'column'}}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <h3 className="chart-title">
-                        {IconComponent && <IconComponent size={20} className="text-primary" />}
+                        {Icon && <Icon size={20} className="text-primary" />}
                         {title}
                     </h3>
                     {subtitle && <p className="chart-subtitle">{subtitle}</p>}
@@ -54,7 +57,6 @@ const ChartCard = (props) => {
                     </div>
                 )}
             </div>
-            {/* Hack do width 99% e position relative para corrigir erro do Recharts */}
             <div style={{ position: 'relative', width: '99%', height: '400px', minHeight: '300px' }}>
                 {children}
             </div>
@@ -76,9 +78,8 @@ const CustomTooltip = ({ active, payload, label }) => {
                 {payload.map((entry, index) => (
                     <p key={index} style={{ color: entry.color, fontSize: '0.85rem', margin: 0 }}>
                         {entry.name === 'plantado' ? 'Plantado' : entry.name === 'colhido' ? 'Colhido' : entry.name}:
-                        <span style={{fontWeight: 600, marginLeft: '4px'}}>
+                        <span style={{ fontWeight: 600, marginLeft: '4px' }}>
                             {typeof entry.value === 'number' ? entry.value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : entry.value}
-                            {(entry.name === 'plantado' || entry.name === 'colhido') ? ' kg' : ''}
                         </span>
                     </p>
                 ))}
@@ -88,12 +89,11 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// --- FUNÇÃO AUXILIAR CRÍTICA ---
 // Cria uma data local ignorando o fuso horário (UTC)
 const criarDataLocal = (dataString) => {
     if (!dataString) return null;
     const [ano, mes, dia] = dataString.split('-').map(Number);
-    return new Date(ano, mes - 1, dia); // Mês começa em 0 no JS
+    return new Date(ano, mes - 1, dia);
 };
 
 const Dashboard = () => {
@@ -103,11 +103,13 @@ const Dashboard = () => {
     const [rawCultivos, setRawCultivos] = useState([]);
     const [rawPlantas, setRawPlantas] = useState([]);
     const [rawAreas, setRawAreas] = useState([]);
-    const [rawTarefas, setRawTarefas] = useState([]);
 
-    // Estados dos KPIs e Gráficos Estáticos
+    // Estados dos KPIs e Gráficos
     const [kpis, setKpis] = useState({ ativos: 0, saudaveis: 0, tarefasPendentes: 0, tarefasConcluidas: 0 });
+
+    /** @type {[Clima | null, Function]} */
     const [clima, setClima] = useState(null);
+
     const [nomeAreaClima, setNomeAreaClima] = useState('');
     const [graficoTipos, setGraficoTipos] = useState([]);
     const [graficoSaude, setGraficoSaude] = useState([]);
@@ -123,35 +125,38 @@ const Dashboard = () => {
     const PIE_COLORS = [COLORS.green, COLORS.orange, COLORS.blue, COLORS.purple];
 
     const tabs = [
-        { id: 'geral', label: 'Visão Geral', icon: <LayoutDashboard size={18}/> },
-        { id: 'catalogo', label: 'Catálogo', icon: <Leaf size={18}/> },
-        { id: 'saude', label: 'Saúde', icon: <Activity size={18}/> },
-        { id: 'tarefas', label: 'Tarefas', icon: <ClipboardList size={18}/> },
-        { id: 'producao', label: 'Produção', icon: <TrendingUp size={18}/> },
+        { id: 'geral', label: 'Visão Geral', icon: <LayoutDashboard size={18} /> },
+        { id: 'catalogo', label: 'Catálogo', icon: <Leaf size={18} /> },
+        { id: 'saude', label: 'Saúde', icon: <Activity size={18} /> },
+        { id: 'tarefas', label: 'Tarefas', icon: <ClipboardList size={18} /> },
+        { id: 'producao', label: 'Produção', icon: <TrendingUp size={18} /> },
     ];
 
     useEffect(() => {
         const carregarDados = async () => {
             try {
                 const [areasRes, plantasRes, cultivosRes, tarefasRes] = await Promise.all([
-                    fetch('http://localhost:8090/api/areas').catch(err => ({ ok: false })),
-                    fetch('http://localhost:8090/api/plantas').catch(err => ({ ok: false })),
-                    fetch('http://localhost:8090/api/cultivos').catch(err => ({ ok: false })),
-                    fetch('http://localhost:8090/api/tarefas').catch(err => ({ ok: false }))
+                    fetch('http://localhost:8090/api/areas').catch(() => ({ ok: false })),
+                    fetch('http://localhost:8090/api/plantas').catch(() => ({ ok: false })),
+                    fetch('http://localhost:8090/api/cultivos').catch(() => ({ ok: false })),
+                    fetch('http://localhost:8090/api/tarefas').catch(() => ({ ok: false }))
                 ]);
 
                 const areas = areasRes.ok ? await areasRes.json() : [];
                 const plantas = plantasRes.ok ? await plantasRes.json() : [];
                 const cultivos = cultivosRes.ok ? await cultivosRes.json() : [];
+
+                /** @type {Tarefa[]} */
                 const tarefas = tarefasRes.ok ? await tarefasRes.json() : [];
 
                 setRawAreas(areas);
                 setRawPlantas(plantas);
                 setRawCultivos(cultivos);
-                setRawTarefas(tarefas);
 
                 // 1. Processamento de KPIs
+                // noinspection SpellCheckingInspection
                 const ativos = cultivos.filter(c => c.statusCultivo === 'ATIVO');
+                // noinspection SpellCheckingInspection
                 const saudaveis = ativos.filter(c => c.estadoPlanta === 'SAUDAVEL').length;
                 const pendentes = tarefas.filter(t => !t.concluida).length;
                 const concluidas = tarefas.filter(t => t.concluida).length;
@@ -169,8 +174,11 @@ const Dashboard = () => {
                 setGraficoTipos(Object.keys(tiposCount).map(key => ({ name: key, value: tiposCount[key] })));
 
                 // 3. Gráfico Saúde
+                // noinspection SpellCheckingInspection
                 const saudeCount = { 'SAUDAVEL': 0, 'EM_ATENCAO': 0, 'COM_PRAGA': 0, 'CRITICO': 0 };
                 ativos.forEach(c => { if (saudeCount[c.estadoPlanta] !== undefined) saudeCount[c.estadoPlanta]++; });
+
+                // noinspection SpellCheckingInspection
                 setGraficoSaude([
                     { name: 'Saudável', valor: saudeCount['SAUDAVEL'], fill: COLORS.green },
                     { name: 'Atenção', valor: saudeCount['EM_ATENCAO'], fill: COLORS.orange },
@@ -191,16 +199,17 @@ const Dashboard = () => {
                     } else {
                         setSugestao({ area: areaPrincipal.nomeArea, planta: "Rotação de Culturas", motivo: "para recuperar nutrientes" });
                     }
-                    const climaRes = await fetch(`http://localhost:8090/api/areas/${areaPrincipal.idArea}/clima`).catch(err => null);
+                    const climaRes = await fetch(`http://localhost:8090/api/areas/${areaPrincipal.idArea}/clima`).catch(() => null);
                     if (climaRes && climaRes.ok) setClima(await climaRes.json());
                 }
 
-            } catch (error) { console.error("Erro ao carregar dashboard:", error); }
+            } catch (error) {
+                console.error("Erro ao carregar dashboard:", error);
+            }
         };
-        carregarDados();
-    }, []);
 
-    // --- LÓGICA DO GRÁFICO DINÂMICO DE PRODUÇÃO ---
+        void carregarDados();
+    }, []);
 
     const alterarMes = (direcao) => {
         const novaData = new Date(dataReferencia);
@@ -226,22 +235,18 @@ const Dashboard = () => {
         });
 
         cultivosFiltrados.forEach(c => {
-            // Lógica para Colhidos (Com correção de fuso)
             if (c.statusCultivo === 'COLHIDO' && c.dataColheitaFinal) {
-                const dataColheita = criarDataLocal(c.dataColheitaFinal); // <-- USO DA FUNÇÃO SEGURA
+                const dataColheita = criarDataLocal(c.dataColheitaFinal);
                 if (dataColheita) {
                     const chaveColheita = `${mesesNomes[dataColheita.getMonth()]}/${dataColheita.getFullYear().toString().slice(2)}`;
                     if (historicoMap.has(chaveColheita)) {
-                        // Garante que é número para evitar erro de soma
                         const qtd = Number(c.quantidadeColhida) || 0;
                         historicoMap.get(chaveColheita).colhido += qtd;
                     }
                 }
             }
-
-            // Lógica para Plantados (Com correção de fuso)
             if (c.dataPlantio) {
-                const dataPlantio = criarDataLocal(c.dataPlantio); // <-- USO DA FUNÇÃO SEGURA
+                const dataPlantio = criarDataLocal(c.dataPlantio);
                 if (dataPlantio) {
                     const chavePlantio = `${mesesNomes[dataPlantio.getMonth()]}/${dataPlantio.getFullYear().toString().slice(2)}`;
                     if (historicoMap.has(chavePlantio)) {
@@ -251,15 +256,9 @@ const Dashboard = () => {
                 }
             }
         });
-
-        return Array.from(historicoMap, ([label, values]) => ({
-            name: label,
-            plantado: values.plantado,
-            colhido: values.colhido
-        }));
+        return Array.from(historicoMap, ([label, values]) => ({ name: label, plantado: values.plantado, colhido: values.colhido }));
     }, [rawCultivos, filtroTipo, filtroId, dataReferencia]);
 
-    // Dados para Visão Geral (Mesma correção aplicada)
     const dadosVisaoGeral = useMemo(() => {
         const hoje = new Date();
         const mesesNomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -272,28 +271,26 @@ const Dashboard = () => {
 
         rawCultivos.forEach(c => {
             if (c.statusCultivo === 'COLHIDO' && c.dataColheitaFinal) {
-                const d = criarDataLocal(c.dataColheitaFinal); // <-- Correção
+                const d = criarDataLocal(c.dataColheitaFinal);
                 if (d) {
                     const mes = mesesNomes[d.getMonth()];
                     if (mapa.has(mes)) mapa.get(mes).colhido += (Number(c.quantidadeColhida) || 0);
                 }
             }
             if (c.dataPlantio) {
-                const d = criarDataLocal(c.dataPlantio); // <-- Correção
+                const d = criarDataLocal(c.dataPlantio);
                 if (d) {
                     const mes = mesesNomes[d.getMonth()];
                     if (mapa.has(mes)) mapa.get(mes).plantado += (Number(c.quantidadePlantada) || 0);
                 }
             }
         });
-
         return Array.from(mapa, ([name, vals]) => ({ name, ...vals }));
     }, [rawCultivos]);
 
 
     return (
         <div className="animate-fade-in" style={{ padding: '0 10px' }}>
-
             <div style={{ marginBottom: '32px' }}>
                 <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Dashboard</h1>
                 <p style={{ color: '#64748b', marginTop: '4px' }}>Visão geral e indicadores do sistema Cultiva+.</p>
@@ -308,9 +305,10 @@ const Dashboard = () => {
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 4px 0', color: '#0f172a' }}>
                             💡 Sugestão Inteligente
                         </h3>
+                        {/* Texto ajustado para evitar gerúndios e erros de estilo */}
                         <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', margin: '0 0 12px 0' }}>
                             Com base no solo da área <strong>{sugestao.area}</strong>, recomendamos o plantio de <strong>{sugestao.planta}</strong>,
-                            pois é {sugestao.motivo}.
+                            visto que é {sugestao.motivo}.
                         </p>
                         <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                             Ver Detalhes do Plantio
@@ -320,7 +318,8 @@ const Dashboard = () => {
             )}
 
             <div className="kpi-grid">
-                <StatCard title="Cultivos Ativos" value={kpis.ativos} subtext="Monitorando em tempo real" icon={Sprout} colorClass="bg-green-light" />
+                {/* Texto 'Monitorando' alterado para 'Monitoramento' para evitar gerúndio */}
+                <StatCard title="Cultivos Ativos" value={kpis.ativos} subtext="Monitoramento em tempo real" icon={Sprout} colorClass="bg-green-light" />
                 <StatCard title="Plantas Saudáveis" value={kpis.saudaveis} subtext={`${kpis.ativos > 0 ? Math.round((kpis.saudaveis / kpis.ativos) * 100) : 0}% do total ativo`} icon={CheckCircle} colorClass="bg-blue-light" />
                 <StatCard title="Alertas Pendentes" value={kpis.tarefasPendentes} subtext="Tarefas não concluídas" icon={AlertCircle} colorClass="bg-red-light" />
                 <StatCard title="Tarefas Concluídas" value={kpis.tarefasConcluidas} subtext="Histórico total" icon={ClipboardList} colorClass="bg-purple-light" />
@@ -338,45 +337,42 @@ const Dashboard = () => {
                 ))}
             </div>
 
-            {/* ================= CONTEÚDO DAS ABAS ================= */}
-
             <div className="tab-content" style={{ paddingBottom: '40px' }}>
 
                 {/* 1. VISÃO GERAL */}
                 {activeTab === 'geral' && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-
                         <ChartCard title="Tendência de Produção" subtitle="Visão macro (últimos 6 meses)" icon={TrendingUp}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={dadosVisaoGeral}>
                                     <defs>
                                         <linearGradient id="colorColhido" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.2}/>
-                                            <stop offset="95%" stopColor={COLORS.green} stopOpacity={0}/>
+                                            <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor={COLORS.green} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                    <Tooltip content={CustomTooltip} />
                                     <Area type="monotone" dataKey="colhido" stroke={COLORS.green} strokeWidth={3} fillOpacity={1} fill="url(#colorColhido)" name="colhido" />
                                     <Area type="monotone" dataKey="plantado" stroke={COLORS.blue} strokeWidth={2} strokeDasharray="5 5" fill="none" name="plantado" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </ChartCard>
 
-                        {/* Clima Card */}
                         <ChartCard title="Clima Local" subtitle={`Referência: ${nomeAreaClima || 'Nenhuma área'}`} icon={CloudSun}>
                             {clima ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', gap: '30px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
                                         <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#f59e0b' }}>{clima.incidenciaSolarMedia}</div>
+                                            {/* Optional Chaining + JSDoc resolve o erro de variável não resolvida */}
+                                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#f59e0b' }}>{clima?.incidenciaSolarMedia}</div>
                                             <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Incidência Solar (kWh/m²)</div>
                                         </div>
                                         <div style={{ width: '1px', height: '60px', backgroundColor: '#e2e8f0' }}></div>
                                         <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#0ea5e9' }}>{clima.umidadeMedia}%</div>
+                                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#0ea5e9' }}>{clima?.umidadeMedia}%</div>
                                             <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Umidade do Ar</div>
                                         </div>
                                     </div>
@@ -395,7 +391,7 @@ const Dashboard = () => {
 
                 {/* 2. CATÁLOGO */}
                 {activeTab === 'catalogo' && (
-                    <div style={{ width: '100%' }}>
+                    <div style={{ width: '100%', height: 300 }}>
                         <ChartCard title="Distribuição do Catálogo" subtitle="Tipos de plantas cadastradas" icon={IconeGrafico}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -404,7 +400,7 @@ const Dashboard = () => {
                                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />
                                         ))}
                                     </Pie>
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip content={CustomTooltip} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -414,14 +410,14 @@ const Dashboard = () => {
 
                 {/* 3. SAÚDE */}
                 {activeTab === 'saude' && (
-                    <div style={{ width: '100%' }}>
+                    <div style={{ width: '100%', height: 300 }}>
                         <ChartCard title="Saúde dos Cultivos" subtitle="Monitoramento de pragas e doenças" icon={Bug}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={graficoSaude} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 14}} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9'}} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                                    <Tooltip content={CustomTooltip} cursor={{ fill: '#f1f5f9' }} />
                                     <Bar dataKey="valor" radius={[8, 8, 0, 0]} barSize={60}>
                                         {graficoSaude.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -435,7 +431,7 @@ const Dashboard = () => {
 
                 {/* 4. TAREFAS */}
                 {activeTab === 'tarefas' && (
-                    <div style={{ width: '100%' }}>
+                    <div style={{ width: '100%', height: 300 }}>
                         <ChartCard title="Status das Tarefas" subtitle="Progresso das atividades operacionais" icon={ClipboardList}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -443,7 +439,7 @@ const Dashboard = () => {
                                         <Cell fill="#fbbf24" name="Pendentes" />
                                         <Cell fill="#16a34a" name="Concluídas" />
                                     </Pie>
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip content={CustomTooltip} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -464,7 +460,7 @@ const Dashboard = () => {
                                         onClick={() => alterarMes('anterior')}
                                         style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer' }}
                                     >
-                                        <ChevronLeft size={16} color="#64748b"/>
+                                        <ChevronLeft size={16} color="#64748b" />
                                     </button>
 
                                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -513,7 +509,7 @@ const Dashboard = () => {
                                         onClick={() => alterarMes('proximo')}
                                         style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer' }}
                                     >
-                                        <ChevronRight size={16} color="#64748b"/>
+                                        <ChevronRight size={16} color="#64748b" />
                                     </button>
                                 </div>
                             }
@@ -521,18 +517,17 @@ const Dashboard = () => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={dadosProducaoFiltrados} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 14}} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-                                    <Line name="colhido" type="monotone" dataKey="colhido" stroke={COLORS.green} strokeWidth={3} dot={{r:5, fill: COLORS.green}} activeDot={{r: 7}} />
-                                    <Line name="plantado" type="monotone" dataKey="plantado" stroke={COLORS.blue} strokeWidth={2} strokeDasharray="5 5" dot={{r:4, fill: COLORS.blue}} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                                    <Tooltip content={CustomTooltip} />
+                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                    <Line name="colhido" type="monotone" dataKey="colhido" stroke={COLORS.green} strokeWidth={3} dot={{ r: 5, fill: COLORS.green }} activeDot={{ r: 7 }} />
+                                    <Line name="plantado" type="monotone" dataKey="plantado" stroke={COLORS.blue} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: COLORS.blue }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </ChartCard>
                     </div>
                 )}
-
             </div>
         </div>
     );
