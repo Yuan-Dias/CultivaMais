@@ -328,7 +328,7 @@ const Cultivos = () => {
                                         <div className="cultivo-info-row" style={{marginBottom: '4px'}}>
                                             <TrendingUp size={16} className="text-green-600" />
                                             <span style={{color: '#15803d', fontWeight: 600}}>
-                                    Colhido: {cultivo.quantidadeColhida} kg
+                                    Colhido: {cultivo.quantidadeColhida}
                                 </span>
                                         </div>
 

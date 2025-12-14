@@ -26,6 +26,8 @@ public class AreaCultivo {
     private double latitudeArea;
     private double longitudeArea;
     private double tamanhoArea;
+    @Enumerated(EnumType.STRING)
+    private QuantidadeLuz quantidadeLuz;
 
     @Enumerated(EnumType.STRING)
     private TipoSolo tipoSolo;
@@ -38,13 +40,13 @@ public class AreaCultivo {
     public AreaCultivo (String nomeArea){
         
         this.nomeArea = nomeArea;
-
         this.tamanhoArea = 0.0;
         this.tipoSolo = null;
         this.observacaoArea = null;
         this.localizacaoArea = null;
         this.latitudeArea = 0.0;
         this.longitudeArea = 0.0;
+        this.quantidadeLuz = quantidadeLuz;
         this.cultivos = new ArrayList<>();
     }
 
@@ -78,6 +80,7 @@ public class AreaCultivo {
     public List<Cultivo> getCultivos(){
         return this.cultivos;
     }
+    public QuantidadeLuz getQuantidadeLuz() {return this.quantidadeLuz;}
 
     //Setters
     public void setIdArea(Long idArea) {
@@ -116,4 +119,5 @@ public class AreaCultivo {
     public void setCultivos(List<Cultivo> cultivos) {
         this.cultivos = cultivos;
     }
+    public void setQuantidadeLuz(QuantidadeLuz quantidadeLuz) { this.quantidadeLuz = quantidadeLuz; }
 }

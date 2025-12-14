@@ -1381,46 +1381,78 @@ body {
    ESTILO LOVABLE (ADMINISTRAÇÃO)
    ========================================= */
 
+/* Título e Cabeçalho - Correção de Margem */
+.dashboard-title {
+    margin-top: 0 !important; /* Remove o espaço padrão do navegador */
+    margin-bottom: 8px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.dashboard-subtitle {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+/* Filtro */
+.filter-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 32px;
+}
+
+.filter-title {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
 /* Grid de Usuários */
 .users-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
 }
 
 /* Card de Usuário */
 .user-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
 .user-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border-color: #cbd5e1;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
 }
 
 /* Avatar do Usuário (Inicial) */
 .user-avatar-lg {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background-color: #f1f5f9;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-  flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 .avatar-admin { background-color: #fee2e2; color: #dc2626; }
@@ -1430,27 +1462,27 @@ body {
 
 /* Informações do Usuário */
 .user-info-content h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #0f172a;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
 }
 
 .user-email {
-  margin: 2px 0 8px 0;
-  font-size: 0.85rem;
-  color: #64748b;
-  display: block;
+    margin: 2px 0 8px 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    display: block;
 }
 
 /* Badge de Função */
 .role-badge {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
 }
 
 .role-admin { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
@@ -1460,65 +1492,63 @@ body {
 
 /* Botão de Excluir (Canto) */
 .btn-delete-user {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  color: #cbd5e1;
-  cursor: pointer;
-  transition: color 0.2s;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: color 0.2s;
 }
 
 .btn-delete-user:hover { color: #ef4444; }
 
 /* Seção de Segurança e Backup */
 .admin-section-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
 }
 
 .admin-panel-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
 }
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
 }
 
 .panel-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
 }
 
 .panel-desc {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-top: 4px;
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-top: 4px;
 }
 
 .panel-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
 }
 
 .panel-row:last-of-type { border-bottom: none; margin-bottom: 16px; }
 .panel-label { color: #64748b; }
 .panel-value { font-weight: 500; color: #0f172a; }
-
-/*FIM DA REPAGINAÇÃO*/
 
 /* =========================================
    GLOBAL & LAYOUT
@@ -1893,4 +1923,253 @@ body, * {
   border-radius: 0.75rem;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* =========================================
+   ESTILO PARA GEOLOCALIZAÇÃO (NOVO)
+   ========================================= */
+
+.geo-box {
+    background-color: #f8fafc; /* Slate-50 */
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0; /* Slate-200 */
+    margin-bottom: 24px;
+    transition: all 0.2s;
+}
+
+.geo-box:focus-within {
+    border-color: #cbd5e1;
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.geo-box-header {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    color: #475569; /* Slate-600 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.geo-help-text {
+    font-size: 0.75rem;
+    color: #94a3b8; /* Slate-400 */
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Animações Globais */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* =========================================
+   TELA DE LOGIN
+   ========================================= */
+
+.login-container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+}
+
+.login-card {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 420px;
+    transition: all 0.3s ease;
+}
+
+.login-title {
+    color: #166534; /* Verde escuro */
+    text-align: center;
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.login-subtitle {
+    color: #6b7280;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.login-input {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.login-input:focus {
+    border-color: #166534;
+    box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+}
+
+/* Estilização específica para o campo de Código */
+.input-code {
+    letter-spacing: 4px;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    background-color: #f8fafc;
+}
+
+.btn-login {
+    background-color: #166534;
+    color: white;
+    padding: 0.875rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-login:hover {
+    background-color: #14532d;
+}
+
+.btn-login:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.error-msg {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.success-msg {
+    color: #166534;
+    background-color: #dcfce7;
+    border: 1px solid #bbf7d0;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+}
+
+.link-action {
+    background: none;
+    border: none;
+    color: #166534;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 4px;
+}
+
+.link-action:hover {
+    color: #14532d;
+}
+
+/* ... [ESTILOS ANTERIORES MANTIDOS] ... */
+
+/* =========================================
+   ESTILO DOS LOGS (TABELA)
+   ========================================= */
+
+.log-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.log-table thead {
+    background-color: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.log-table th {
+    text-align: left;
+    padding: 12px 16px;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.log-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.log-table tr:last-child td {
+    border-bottom: none;
+}
+
+.log-table tr:hover {
+    background-color: #f8fafc;
 }
