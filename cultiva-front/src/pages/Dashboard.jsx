@@ -44,7 +44,8 @@ const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => {
 
 const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) => {
     return (
-        <div className="chart-card-container" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        // minWidth: 0 é crucial para impedir que o gráfico estoure o flex container
+        <div className="chart-card-container" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <div className="chart-header">
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <h3 className="chart-title">
@@ -54,12 +55,13 @@ const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) =>
                     {subtitle && <p className="chart-subtitle">{subtitle}</p>}
                 </div>
                 {headerControls && (
-                    <div style={{ marginLeft: 'auto' }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
                         {headerControls}
                     </div>
                 )}
             </div>
-            <div style={{ position: 'relative', width: '99%', height: '400px', minHeight: '300px' }}>
+            {/* Altura fixa garante renderização correta do Recharts */}
+            <div style={{ position: 'relative', width: '100%', height: '350px', minHeight: '300px' }}>
                 {children}
             </div>
         </div>
@@ -74,7 +76,8 @@ const CustomTooltip = ({ active, payload, label }) => {
                 border: '1px solid #e2e8f0',
                 padding: '12px',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                zIndex: 100
             }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '4px', color: '#1e293b' }}>{label}</p>
                 {payload.map((entry, index) => (
@@ -115,7 +118,7 @@ const Dashboard = () => {
     const [sugestoesInteligentes, setSugestoesInteligentes] = useState([]);
     const [indiceSugestao, setIndiceSugestao] = useState(0);
 
-    // --- ESTADOS DO MODAL DE PLANTIO RÁPIDO (NOVO) ---
+    // --- ESTADOS DO MODAL DE PLANTIO RÁPIDO ---
     const [modalPlantioAberto, setModalPlantioAberto] = useState(false);
     const [dadosPlantioRapido, setDadosPlantioRapido] = useState({
         quantidadePlantada: '',
@@ -126,6 +129,8 @@ const Dashboard = () => {
     const [graficoTipos, setGraficoTipos] = useState([]);
     const [graficoSaude, setGraficoSaude] = useState([]);
     const [graficoTarefas, setGraficoTarefas] = useState([]);
+
+    // Filtros de Produção
     const [filtroTipo, setFiltroTipo] = useState('geral');
     const [filtroId, setFiltroId] = useState('');
     const [dataReferencia, setDataReferencia] = useState(new Date());
@@ -141,7 +146,7 @@ const Dashboard = () => {
         { id: 'producao', label: 'Produção', icon: <TrendingUp size={18} /> },
     ];
 
-    // --- ALGORITMO DE SUGESTÃO (ATUALIZADO PARA INCLUIR IDs) ---
+    // --- ALGORITMO DE SUGESTÃO ---
     const gerarSugestoesInteligentes = (areas, plantas, cultivos) => {
         const sugestoesCalculadas = [];
         const mapaLuz = { 'PLENO_SOL': ['ALTA'], 'MEIA_SOMBRA': ['MEDIA', 'BAIXA'], 'SOMBRA': ['BAIXA'] };
@@ -189,8 +194,8 @@ const Dashboard = () => {
 
             if (melhorPlanta && maiorScore > 0) {
                 sugestoesCalculadas.push({
-                    idArea: area.idArea,             // NOVO: ID necessário para o POST
-                    idPlanta: melhorPlanta.idPlanta, // NOVO: ID necessário para o POST
+                    idArea: area.idArea,
+                    idPlanta: melhorPlanta.idPlanta,
                     areaNome: area.nomeArea,
                     plantaNome: melhorPlanta.nomePopular,
                     tipoPlanta: melhorPlanta.tipoPlanta,
@@ -224,7 +229,7 @@ const Dashboard = () => {
             const sugestoesGeradas = gerarSugestoesInteligentes(areas, plantas, cultivos);
             setSugestoesInteligentes(sugestoesGeradas);
 
-            if (areas.length > 0) setIdAreaClimaSelecionada(areas[0].idArea);
+            if (areas.length > 0 && !idAreaClimaSelecionada) setIdAreaClimaSelecionada(areas[0].idArea);
 
             const ativos = cultivos.filter(c => c.statusCultivo === 'ATIVO');
             const saudaveis = ativos.filter(c => c.estadoPlanta === 'SAUDAVEL').length;
@@ -233,7 +238,7 @@ const Dashboard = () => {
 
             setKpis({ ativos: ativos.length, saudaveis, tarefasPendentes: pendentes, tarefasConcluidas: concluidas });
 
-            // Gráficos... (Lógica mantida simplificada aqui)
+            // Gráficos Auxiliares
             const tiposCount = {};
             plantas.forEach(p => { const t = p.tipoPlanta || 'OUTROS'; tiposCount[t] = (tiposCount[t] || 0) + 1; });
             setGraficoTipos(Object.keys(tiposCount).map(key => ({ name: key, value: tiposCount[key] })));
@@ -302,8 +307,8 @@ const Dashboard = () => {
                 if(res.ok) {
                     alert('Cultivo iniciado com sucesso! 🌱');
                     setModalPlantioAberto(false);
-                    carregarDadosGerais(); // Atualiza tudo (KPIs, Gráficos e remove a sugestão da lista)
-                    setIndiceSugestao(0); // Reseta índice
+                    carregarDadosGerais(); // Atualiza tudo e remove sugestão da lista
+                    setIndiceSugestao(0);
                 } else {
                     alert('Erro ao iniciar cultivo.');
                 }
@@ -319,19 +324,24 @@ const Dashboard = () => {
     };
 
     const dadosProducaoFiltrados = useMemo(() => {
-        // ... (Mesma lógica anterior, mantida para brevidade)
         const mesesNomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         const historicoMap = new Map();
+
+        // Cria base de dados com 0 para os últimos 6 meses
         for (let i = 5; i >= 0; i--) {
             const d = new Date(dataReferencia.getFullYear(), dataReferencia.getMonth() - i, 1);
             historicoMap.set(`${mesesNomes[d.getMonth()]}/${d.getFullYear().toString().slice(2)}`, { plantado: 0, colhido: 0 });
         }
+
+        // Filtra por seleção do usuário
         const cultivosFiltrados = rawCultivos.filter(c => {
             if (filtroTipo === 'geral') return true;
-            if (filtroTipo === 'planta') return c.plantaCultivada && c.plantaCultivada.idPlanta.toString() === filtroId;
-            if (filtroTipo === 'area') return c.areaCultivo && c.areaCultivo.idArea.toString() === filtroId;
+            if (filtroTipo === 'planta' && filtroId) return c.plantaCultivada && c.plantaCultivada.idPlanta.toString() === filtroId.toString();
+            if (filtroTipo === 'area' && filtroId) return c.areaCultivo && c.areaCultivo.idArea.toString() === filtroId.toString();
             return true;
         });
+
+        // Popula os dados
         cultivosFiltrados.forEach(c => {
             if (c.statusCultivo === 'COLHIDO' && c.dataColheitaFinal) {
                 const d = criarDataLocal(c.dataColheitaFinal);
@@ -352,7 +362,6 @@ const Dashboard = () => {
     }, [rawCultivos, filtroTipo, filtroId, dataReferencia]);
 
     const dadosVisaoGeral = useMemo(() => {
-        // ... (Mesma lógica anterior)
         const hoje = new Date();
         const mesesNomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         const mapa = new Map();
@@ -377,7 +386,7 @@ const Dashboard = () => {
     const anteriorSugestao = () => setIndiceSugestao((prev) => (prev - 1 + sugestoesInteligentes.length) % sugestoesInteligentes.length);
 
     return (
-        <div className="animate-fade-in" style={{ padding: '0 10px' }}>
+        <div className="animate-fade-in" style={{ padding: '0 10px', maxWidth: '100%', overflowX: 'hidden' }}>
             <div style={{ marginBottom: '32px' }}>
                 <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Dashboard</h1>
                 <p style={{ color: '#64748b', marginTop: '4px' }}>Visão geral e inteligência de dados do Cultiva+.</p>
@@ -385,17 +394,17 @@ const Dashboard = () => {
 
             {/* --- SEÇÃO DE SUGESTÃO INTELIGENTE "AI" --- */}
             {activeTab === 'geral' && sugestoesInteligentes.length > 0 && (
-                <div className="modern-banner ai-banner" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid #bbf7d0', position: 'relative' }}>
+                <div className="modern-banner ai-banner" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid #bbf7d0', position: 'relative', marginBottom: '24px' }}>
                     <div style={{ position: 'absolute', top: 10, right: 10, opacity: 0.1 }}>
                         <Sparkles size={100} color="#16a34a" />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', zIndex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', zIndex: 1, flexWrap: 'wrap' }}>
                         <div className="icon-box bg-green-light" style={{ width: '56px', height: '56px', flexShrink: 0 }}>
                             <Lightbulb size={32} className="text-green-600" />
                         </div>
 
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, minWidth: '250px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, color: '#14532d', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     Sugestão Inteligente <span style={{ fontSize: '0.75rem', background: '#22c55e', color: 'white', padding: '2px 8px', borderRadius: '12px' }}>Match {(sugestoesInteligentes[indiceSugestao].score)}%</span>
@@ -421,7 +430,6 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* BOTÃO AGORA FUNCIONAL */}
                         <button className="btn-primary" onClick={abrirModalPlantio} style={{ padding: '10px 20px', fontSize: '0.9rem', boxShadow: '0 4px 6px -2px rgba(22, 163, 74, 0.2)' }}>
                             Plantar Agora <ArrowRight size={16} style={{ marginLeft: 6 }} />
                         </button>
@@ -437,9 +445,8 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* ... Resto do Dashboard (Cards de KPIs, Tabs, etc) permanece igual ... */}
             {activeTab === 'geral' && sugestoesInteligentes.length === 0 && rawAreas.length > 0 && (
-                <div className="modern-banner" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div className="modern-banner" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', marginBottom: '24px', padding: '16px', borderRadius: '8px' }}>
                     <div style={{ color: '#64748b' }}>Todas as suas áreas estão produtivas ou faltam dados para análise! 🚀</div>
                 </div>
             )}
@@ -464,7 +471,7 @@ const Dashboard = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
                         <ChartCard title="Tendência de Produção" subtitle="Visão macro (últimos 6 meses)" icon={TrendingUp}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={dadosVisaoGeral}>
+                                <AreaChart data={dadosVisaoGeral} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorColhido" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.2} />
@@ -509,13 +516,13 @@ const Dashboard = () => {
                         </ChartCard>
                     </div>
                 )}
-                {/* Outras tabs (catalogo, saude, tarefas, producao) mantidas iguais ao código anterior... */}
+
                 {activeTab === 'catalogo' && (
-                    <div style={{ width: '100%', height: 300 }}>
+                    <div style={{ width: '100%' }}>
                         <ChartCard title="Distribuição do Catálogo" subtitle="Tipos de plantas cadastradas" icon={IconeGrafico}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={graficoTipos} cx="50%" cy="50%" innerRadius={80} outerRadius={140} paddingAngle={5} dataKey="value">
+                                    <Pie data={graficoTipos} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
                                         {graficoTipos.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />)}
                                     </Pie>
                                     <Tooltip content={CustomTooltip} />
@@ -525,8 +532,9 @@ const Dashboard = () => {
                         </ChartCard>
                     </div>
                 )}
+
                 {activeTab === 'saude' && (
-                    <div style={{ width: '100%', height: 300 }}>
+                    <div style={{ width: '100%' }}>
                         <ChartCard title="Saúde dos Cultivos" subtitle="Monitoramento de pragas e doenças" icon={Bug}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={graficoSaude} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -542,12 +550,13 @@ const Dashboard = () => {
                         </ChartCard>
                     </div>
                 )}
+
                 {activeTab === 'tarefas' && (
-                    <div style={{ width: '100%', height: 300 }}>
+                    <div style={{ width: '100%' }}>
                         <ChartCard title="Status das Tarefas" subtitle="Progresso das atividades operacionais" icon={ClipboardList}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={graficoTarefas} cx="50%" cy="50%" innerRadius={0} outerRadius={140} dataKey="value" labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                    <Pie data={graficoTarefas} cx="50%" cy="50%" innerRadius={0} outerRadius={120} dataKey="value" labelLine={false} label={({ name, percent }) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}>
                                         <Cell fill="#fbbf24" name="Pendentes" />
                                         <Cell fill="#16a34a" name="Concluídas" />
                                     </Pie>
@@ -558,31 +567,35 @@ const Dashboard = () => {
                         </ChartCard>
                     </div>
                 )}
+
                 {activeTab === 'producao' && (
                     <div style={{ width: '100%' }}>
                         <ChartCard title="Análise de Produção Detalhada" subtitle="Controle total de entradas e saídas" icon={TrendingUp}
                                    headerControls={
                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                            <button onClick={() => alterarMes('anterior')} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer' }}><ChevronLeft size={16} color="#64748b" /></button>
+
                                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                               <Filter size={14} style={{ position: 'absolute', left: '8px', color: '#64748b' }} />
-                                               <select value={filtroTipo} onChange={(e) => { setFiltroTipo(e.target.value); setFiltroId(''); }} style={{ padding: '6px 8px 6px 28px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', outline: 'none' }}>
+                                               <Filter size={14} style={{ position: 'absolute', left: '8px', color: '#64748b', pointerEvents: 'none' }} />
+                                               <select value={filtroTipo} onChange={(e) => { setFiltroTipo(e.target.value); setFiltroId(''); }} style={{ padding: '6px 8px 6px 28px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', outline: 'none', cursor: 'pointer', backgroundColor: 'white' }}>
                                                    <option value="geral">Visão Geral</option>
                                                    <option value="planta">Por Planta</option>
                                                    <option value="area">Por Área</option>
                                                </select>
                                            </div>
+
                                            {filtroTipo !== 'geral' && (
-                                               <select value={filtroId} onChange={(e) => setFiltroId(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', outline: 'none', maxWidth: '150px' }}>
+                                               <select value={filtroId} onChange={(e) => setFiltroId(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', outline: 'none', maxWidth: '150px', cursor: 'pointer', backgroundColor: 'white' }}>
                                                    <option value="">Selecione...</option>
                                                    {filtroTipo === 'planta' ? rawPlantas.map(p => <option key={p.idPlanta} value={p.idPlanta}>{p.nomePopular}</option>) : rawAreas.map(a => <option key={a.idArea} value={a.idArea}>{a.nomeArea}</option>)}
                                                </select>
                                            )}
+
                                            <button onClick={() => alterarMes('proximo')} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer' }}><ChevronRight size={16} color="#64748b" /></button>
                                        </div>
                                    }>
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={dadosProducaoFiltrados} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <LineChart data={dadosProducaoFiltrados} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
@@ -597,41 +610,57 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* --- MODAL DE PLANTIO RÁPIDO (NOVO) --- */}
+            {/* --- MODAL DE PLANTIO RÁPIDO --- */}
             {modalPlantioAberto && sugestoesInteligentes[indiceSugestao] && (
-                <div className="modal-modern-overlay">
-                    <div className="modal-modern-content" style={{ maxWidth: '450px' }}>
+                <div className="modal-modern-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div className="modal-modern-content animate-scale-in" style={{
+                        backgroundColor: 'white', borderRadius: '12px', padding: '24px',
+                        width: '90%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                    }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 className="modal-title" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                <Sprout className="text-primary"/> Confirmar Plantio
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem', color: '#1e293b', margin: 0 }}>
+                                <Sprout className="text-primary" size={24} /> Confirmar Plantio
                             </h2>
-                            <button onClick={() => setModalPlantioAberto(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+                            <button onClick={() => setModalPlantioAberto(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                                <X size={24} />
+                            </button>
                         </div>
 
-                        <div style={{background: '#f0fdf4', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bbf7d0'}}>
-                            <p style={{margin: 0, color: '#166534', fontSize: '0.9rem'}}>
+                        <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bbf7d0' }}>
+                            <p style={{ margin: 0, color: '#166534', fontSize: '0.9rem' }}>
                                 Você está plantando <strong>{sugestoesInteligentes[indiceSugestao].plantaNome}</strong> na área <strong>{sugestoesInteligentes[indiceSugestao].areaNome}</strong>.
                             </p>
                         </div>
 
                         <form onSubmit={confirmarPlantioRapido}>
-                            <div className="form-group">
-                                <label className="form-label">Quantidade a Plantar</label>
-                                <input type="number" className="form-input" placeholder="Ex: 500" required
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: '#475569', marginBottom: '6px', fontWeight: 500 }}>Quantidade a Plantar</label>
+                                <input type="number" required min="1"
+                                       style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
+                                       placeholder="Ex: 500"
                                        value={dadosPlantioRapido.quantidadePlantada}
-                                       onChange={e => setDadosPlantioRapido({...dadosPlantioRapido, quantidadePlantada: e.target.value})}
+                                       onChange={e => setDadosPlantioRapido({ ...dadosPlantioRapido, quantidadePlantada: e.target.value })}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Data do Plantio</label>
-                                <input type="date" className="form-input" required
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: '#475569', marginBottom: '6px', fontWeight: 500 }}>Data do Plantio</label>
+                                <input type="date" required
+                                       style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
                                        value={dadosPlantioRapido.dataPlantio}
-                                       onChange={e => setDadosPlantioRapido({...dadosPlantioRapido, dataPlantio: e.target.value})}
+                                       onChange={e => setDadosPlantioRapido({ ...dadosPlantioRapido, dataPlantio: e.target.value })}
                                 />
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn-outline" onClick={() => setModalPlantioAberto(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary">Confirmar e Plantar</button>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <button type="button" onClick={() => setModalPlantioAberto(false)} style={{ padding: '10px', borderRadius: '6px', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontWeight: 600, color: '#475569' }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" style={{ padding: '10px', borderRadius: '6px', background: '#16a34a', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                                    Confirmar e Plantar
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
-import br.com.cultiva.cultivamais.model.LogSistema; // Import Log
+import br.com.cultiva.cultivamais.model.LogSistema;
 import br.com.cultiva.cultivamais.model.Usuario;
-import br.com.cultiva.cultivamais.repository.LogRepository; // Import Repo
+import br.com.cultiva.cultivamais.repository.LogRepository;
 import br.com.cultiva.cultivamais.repository.UsuarioRepository;
 import io.micrometer.common.lang.NonNull;
 
@@ -21,7 +21,12 @@ public class UsuarioService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private LogRepository logRepository; // Injeção do repositório de logs
+    private LogRepository logRepository;
+
+    // Método auxiliar público para o Controller usar na comparação
+    public Usuario buscarPorId(Long id) {
+        return usuarioRepository.findById(id).orElse(null);
+    }
 
     @SuppressWarnings("null")
     public Usuario criarUsuario(@NonNull Usuario novoUsuario) {
@@ -31,7 +36,7 @@ public class UsuarioService {
 
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
 
-        // LOG
+        // Log de criação mantido aqui (ou pode mover para o controller se preferir padronizar)
         logRepository.save(new LogSistema("Sistema", "Criou novo usuário: " + usuarioSalvo.getNomeUsuario()));
 
         return usuarioSalvo;
@@ -63,12 +68,9 @@ public class UsuarioService {
                 usuario.setSenha(dadosAtualizados.getSenha());
             }
 
-            Usuario usuarioSalvo = usuarioRepository.save(usuario);
+            // O Log foi REMOVIDO daqui. Quem gera o log agora é o Controller.
+            return usuarioRepository.save(usuario);
 
-            // LOG
-            logRepository.save(new LogSistema("Sistema", "Atualizou dados do usuário: " + usuarioSalvo.getNomeUsuario()));
-
-            return usuarioSalvo;
         } else {
             throw new ResourceNotFoundException("Usuário não encontrado com ID: " + id);
         }
@@ -80,9 +82,6 @@ public class UsuarioService {
             throw new ResourceNotFoundException("Usuário não encontrado com ID: " + id);
         }
         usuarioRepository.deleteById(id);
-
-        // LOG
-        logRepository.save(new LogSistema("Admin", "Excluiu usuário ID: " + id));
     }
 
     public Usuario autenticar(String email, String senha) {
@@ -90,10 +89,7 @@ public class UsuarioService {
 
         if (usuario != null && usuario.getSenha().equals(senha)) {
             if (Boolean.TRUE.equals(usuario.getAtivo())) {
-
-                // LOG DE LOGIN
-                logRepository.save(new LogSistema(usuario.getNomeUsuario(), "Realizou login no sistema"));
-
+                logRepository.save(new LogSistema(usuario.getNomeUsuario(), "Realizou Login"));
                 return usuario;
             }
         }
@@ -107,14 +103,9 @@ public class UsuarioService {
 
         if (usuario != null) {
             String codigo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-
-            // Salva no banco de dados
             usuario.setCodigoRecuperacao(codigo);
             usuarioRepository.save(usuario);
-
-            // LOG
             logRepository.save(new LogSistema(email, "Solicitou código de recuperação de senha"));
-
             return codigo;
         }
         return null;
@@ -125,15 +116,11 @@ public class UsuarioService {
 
         if (usuario != null) {
             String codigoSalvo = usuario.getCodigoRecuperacao();
-
             if (codigoSalvo != null && codigoSalvo.equals(codigoInput)) {
                 usuario.setSenha(novaSenha);
                 usuario.setCodigoRecuperacao(null);
                 usuarioRepository.save(usuario);
-
-                // LOG
                 logRepository.save(new LogSistema(email, "Redefiniu a senha com sucesso"));
-
                 return true;
             }
         }

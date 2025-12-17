@@ -2,13 +2,10 @@ package br.com.cultiva.cultivamais.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import br.com.cultiva.cultivamais.model.*;
 import br.com.cultiva.cultivamais.service.EventoService;
+import br.com.cultiva.cultivamais.service.LogService; // Importar
 import java.time.LocalDateTime;
 
 @RestController
@@ -18,6 +15,9 @@ public class EventoController {
     @Autowired
     private EventoService eventoService;
 
+    @Autowired
+    private LogService logService; // Injetar
+
     @PostMapping("/irrigacao")
     public ResponseEntity<Irrigacao> registrarIrrigacao(
             @RequestParam Long cultivoId,
@@ -26,9 +26,10 @@ public class EventoController {
             @RequestParam(required = false) String obs,
             @RequestParam LocalDateTime dataHora) {
 
-        Irrigacao irrigacaoSalva = eventoService.registrarIrrigacao(
-            cultivoId, volume, metodo, obs, dataHora);
-            
+        Irrigacao irrigacaoSalva = eventoService.registrarIrrigacao(cultivoId, volume, metodo, obs, dataHora);
+
+        logService.registrarLog("Operador", "Registrou irrigação no cultivo " + cultivoId + ". Volume: " + volume);
+
         return ResponseEntity.ok(irrigacaoSalva);
     }
 
@@ -40,9 +41,10 @@ public class EventoController {
             @RequestParam(required = false) String obs,
             @RequestParam LocalDateTime dataHora) {
 
-        DoencaPraga doencaSalva = eventoService.registrarDoencaPraga(
-            cultivoId, nome, nivel, obs, dataHora);
-            
+        DoencaPraga doencaSalva = eventoService.registrarDoencaPraga(cultivoId, nome, nivel, obs, dataHora);
+
+        logService.registrarLog("Agrônomo", "Reportou praga/doença: " + nome + " (Nível: " + nivel + ")");
+
         return ResponseEntity.ok(doencaSalva);
     }
 }

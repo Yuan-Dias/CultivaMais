@@ -1,31 +1,32 @@
 package br.com.cultiva.cultivamais.model;
 
-import jakarta.persistence.*; // Se der erro, troque 'jakarta' por 'javax'
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat; // Certifique-se de ter o Jackson
 
 @Entity
 @Table(name = "logs_sistema")
 public class LogSistema {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Isso resolve seu erro de auto_increment
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String usuario; // Quem fez a ação
-    private String acao;    // O que fez
+    private String usuario;
+    private String acao;
+
+    // Formata a data como String ISO para o Frontend não receber array de números
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataHora;
 
-    // Construtor vazio (obrigatório pro Java)
     public LogSistema() {}
 
-    // Construtor para facilitar
     public LogSistema(String usuario, String acao) {
         this.usuario = usuario;
         this.acao = acao;
         this.dataHora = LocalDateTime.now();
     }
 
-    // Getters e Setters
     public Long getId() { return id; }
     public String getUsuario() { return usuario; }
     public void setUsuario(String usuario) { this.usuario = usuario; }
