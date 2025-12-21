@@ -4,7 +4,8 @@ import {
     LayoutDashboard, Sprout, Map as CloudSun,
     Activity, Bug, ClipboardList, PieChart as IconeGrafico,
     TrendingUp, Leaf, CheckCircle, AlertCircle,
-    ChevronLeft, ChevronRight, Filter, Lightbulb, Sparkles, ArrowRight, X
+    ChevronLeft, ChevronRight, Filter, Lightbulb, Sparkles, ArrowRight, X,
+    ClipboardX, PackageOpen, CalendarOff
 } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
@@ -44,7 +45,6 @@ const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => {
 
 const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) => {
     return (
-        // minWidth: 0 é crucial para impedir que o gráfico estoure o flex container
         <div className="chart-card-container" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <div className="chart-header">
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -67,6 +67,23 @@ const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) =>
         </div>
     );
 };
+
+// --- NOVO COMPONENTE: EMPTY STATE (ESTADO VAZIO) ---
+const EmptyState = ({ icon: Icon, title, message }) => (
+    <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100%', width: '100%', color: '#94a3b8', textAlign: 'center', padding: '20px'
+    }}>
+        <div style={{
+            background: '#f8fafc', padding: '20px', borderRadius: '50%', marginBottom: '16px',
+            border: '2px dashed #cbd5e1'
+        }}>
+            {Icon && <Icon size={48} strokeWidth={1.5} color="#cbd5e1" />}
+        </div>
+        <h4 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>{title}</h4>
+        <p style={{ fontSize: '0.95rem', maxWidth: '300px', margin: 0 }}>{message}</p>
+    </div>
+);
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -241,7 +258,8 @@ const Dashboard = () => {
             // Gráficos Auxiliares
             const tiposCount = {};
             plantas.forEach(p => { const t = p.tipoPlanta || 'OUTROS'; tiposCount[t] = (tiposCount[t] || 0) + 1; });
-            setGraficoTipos(Object.keys(tiposCount).map(key => ({ name: key, value: tiposCount[key] })));
+            const tiposArray = Object.keys(tiposCount).map(key => ({ name: key, value: tiposCount[key] }));
+            setGraficoTipos(tiposArray);
 
             const saudeCount = { 'SAUDAVEL': 0, 'EM_ATENCAO': 0, 'COM_PRAGA': 0, 'CRITICO': 0 };
             ativos.forEach(c => { if (saudeCount[c.estadoPlanta] !== undefined) saudeCount[c.estadoPlanta]++; });
@@ -251,7 +269,13 @@ const Dashboard = () => {
                 { name: 'Praga', valor: saudeCount['COM_PRAGA'], fill: '#ef5350' },
                 { name: 'Crítico', valor: saudeCount['CRITICO'], fill: COLORS.red }
             ]);
-            setGraficoTarefas([{ name: 'Pendentes', value: pendentes }, { name: 'Concluídas', value: concluidas }]);
+
+            // Só preenche se houver tarefas
+            if (pendentes > 0 || concluidas > 0) {
+                setGraficoTarefas([{ name: 'Pendentes', value: pendentes }, { name: 'Concluídas', value: concluidas }]);
+            } else {
+                setGraficoTarefas([]);
+            }
 
         } catch (error) { console.error("Erro ao carregar dashboard:", error); }
     };
@@ -360,6 +384,9 @@ const Dashboard = () => {
         });
         return Array.from(historicoMap, ([label, vals]) => ({ name: label, ...vals }));
     }, [rawCultivos, filtroTipo, filtroId, dataReferencia]);
+
+    // Verifica se tem dados para mostrar no gráfico
+    const temDadosProducao = dadosProducaoFiltrados.some(d => d.plantado > 0 || d.colhido > 0);
 
     const dadosVisaoGeral = useMemo(() => {
         const hoje = new Date();
@@ -520,15 +547,19 @@ const Dashboard = () => {
                 {activeTab === 'catalogo' && (
                     <div style={{ width: '100%' }}>
                         <ChartCard title="Distribuição do Catálogo" subtitle="Tipos de plantas cadastradas" icon={IconeGrafico}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={graficoTipos} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
-                                        {graficoTipos.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />)}
-                                    </Pie>
-                                    <Tooltip content={CustomTooltip} />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {graficoTipos.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={graficoTipos} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
+                                            {graficoTipos.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />)}
+                                        </Pie>
+                                        <Tooltip content={CustomTooltip} />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <EmptyState icon={PackageOpen} title="Catálogo Vazio" message="Cadastre plantas para ver a distribuição." />
+                            )}
                         </ChartCard>
                     </div>
                 )}
@@ -536,17 +567,21 @@ const Dashboard = () => {
                 {activeTab === 'saude' && (
                     <div style={{ width: '100%' }}>
                         <ChartCard title="Saúde dos Cultivos" subtitle="Monitoramento de pragas e doenças" icon={Bug}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={graficoSaude} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                                    <Tooltip content={CustomTooltip} cursor={{ fill: '#f1f5f9' }} />
-                                    <Bar dataKey="valor" radius={[8, 8, 0, 0]} barSize={60}>
-                                        {graficoSaude.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                            {kpis.ativos > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={graficoSaude} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                                        <Tooltip content={CustomTooltip} cursor={{ fill: '#f1f5f9' }} />
+                                        <Bar dataKey="valor" radius={[8, 8, 0, 0]} barSize={60}>
+                                            {graficoSaude.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <EmptyState icon={Leaf} title="Sem Cultivos" message="Inicie um plantio para monitorar a saúde." />
+                            )}
                         </ChartCard>
                     </div>
                 )}
@@ -554,16 +589,24 @@ const Dashboard = () => {
                 {activeTab === 'tarefas' && (
                     <div style={{ width: '100%' }}>
                         <ChartCard title="Status das Tarefas" subtitle="Progresso das atividades operacionais" icon={ClipboardList}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={graficoTarefas} cx="50%" cy="50%" innerRadius={0} outerRadius={120} dataKey="value" labelLine={false} label={({ name, percent }) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}>
-                                        <Cell fill="#fbbf24" name="Pendentes" />
-                                        <Cell fill="#16a34a" name="Concluídas" />
-                                    </Pie>
-                                    <Tooltip content={CustomTooltip} />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {graficoTarefas.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={graficoTarefas} cx="50%" cy="50%" innerRadius={0} outerRadius={120} dataKey="value" labelLine={false} label={({ name, percent }) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}>
+                                            <Cell fill="#fbbf24" name="Pendentes" />
+                                            <Cell fill="#16a34a" name="Concluídas" />
+                                        </Pie>
+                                        <Tooltip content={CustomTooltip} />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <EmptyState
+                                    icon={ClipboardX}
+                                    title="Sem Tarefas Pendentes"
+                                    message="Tudo limpo! Pode descansar a botina por enquanto. 👢"
+                                />
+                            )}
                         </ChartCard>
                     </div>
                 )}
@@ -594,17 +637,21 @@ const Dashboard = () => {
                                            <button onClick={() => alterarMes('proximo')} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer' }}><ChevronRight size={16} color="#64748b" /></button>
                                        </div>
                                    }>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={dadosProducaoFiltrados} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                                    <Tooltip content={CustomTooltip} />
-                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Line name="colhido" type="monotone" dataKey="colhido" stroke={COLORS.green} strokeWidth={3} dot={{ r: 5, fill: COLORS.green }} activeDot={{ r: 7 }} />
-                                    <Line name="plantado" type="monotone" dataKey="plantado" stroke={COLORS.blue} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: COLORS.blue }} />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            {temDadosProducao ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={dadosProducaoFiltrados} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 14 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                                        <Tooltip content={CustomTooltip} />
+                                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Line name="colhido" type="monotone" dataKey="colhido" stroke={COLORS.green} strokeWidth={3} dot={{ r: 5, fill: COLORS.green }} activeDot={{ r: 7 }} />
+                                        <Line name="plantado" type="monotone" dataKey="plantado" stroke={COLORS.blue} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: COLORS.blue }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <EmptyState icon={CalendarOff} title="Sem Produção" message="Não há registros de plantio ou colheita neste período." />
+                            )}
                         </ChartCard>
                     </div>
                 )}
@@ -632,7 +679,7 @@ const Dashboard = () => {
 
                         <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bbf7d0' }}>
                             <p style={{ margin: 0, color: '#166534', fontSize: '0.9rem' }}>
-                                Você está plantando <strong>{sugestoesInteligentes[indiceSugestao].plantaNome}</strong> na área <strong>{sugestoesInteligentes[indiceSugestao].areaNome}</strong>.
+                                Você está plantando <strong>{sugestoesInteligentes[indiceSugestao]?.plantaNome}</strong> na área <strong>{sugestoesInteligentes[indiceSugestao]?.areaNome}</strong>.
                             </p>
                         </div>
 

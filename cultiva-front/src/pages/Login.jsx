@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// IMPORTANTE: Adicionei userService aqui, pois é onde está o redefinirSenha
 import { authService, userService } from "../services/api";
 import { LogIn, Key, ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -23,37 +22,55 @@ export function Login() {
     const [codigo, setCodigo] = useState('');
     const [novaSenha, setNovaSenha] = useState('');
 
-    // --- LÓGICA DE LOGIN ---
+    // --- LÓGICA DE LOGIN (CORRIGIDA) ---
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setErro('');
 
         try {
-            const usuario = await authService.login(email, senha);
+            // 1. Busca o usuário no Backend
+            const dadosDoBanco = await authService.login(email, senha);
 
-            // Redirecionamento
-            if (usuario.funcao === 'EMPRESA') {
+            // 2. PREPARA E SALVA NO LOCALSTORAGE (Essencial para não dar erro nas outras telas)
+            // As telas 'Tarefas' e 'Dashboard' buscam essa chave 'usuarioLogado' para saber quem é você.
+            const usuarioParaSalvar = {
+                // Garante que o ID seja salvo como 'idUsuario' (padrão do front) mesmo se vier 'id' do banco
+                idUsuario: dadosDoBanco.idUsuario || dadosDoBanco.id,
+                nomeUsuario: dadosDoBanco.nomeUsuario || dadosDoBanco.nome,
+                funcao: dadosDoBanco.funcao,
+                email: dadosDoBanco.email,
+                ativo: dadosDoBanco.ativo
+            };
+
+            localStorage.setItem('usuarioLogado', JSON.stringify(usuarioParaSalvar));
+
+            // 3. Redirecionamento
+            // Agora que os dados estão salvos, podemos navegar com segurança.
+            if (usuarioParaSalvar.funcao === 'EMPRESA') {
                 navigate('/dashboard');
             } else {
+                // Se for ADMIN ou Funcionário, também manda para dashboard (conforme seu código original)
+                // Se quiser mandar para tarefas, mude para navigate('/tarefas');
                 navigate('/dashboard');
             }
 
         } catch (error) {
-            setErro(error.message || "E-mail ou senha incorretos.");
+            console.error(error);
+            setErro("E-mail ou senha incorretos.");
         } finally {
             setLoading(false);
         }
     };
 
-    // --- LÓGICA DE REDEFINIÇÃO DE SENHA (CORRIGIDA) ---
+    // --- LÓGICA DE REDEFINIÇÃO DE SENHA ---
     const handleResetSenha = async (e) => {
         e.preventDefault();
         setLoading(true);
         setErro('');
         setSucesso('');
 
-        // Validação simples antes de enviar
+        // Validação simples
         if(!email || !codigo || !novaSenha) {
             setErro("Preencha todos os campos.");
             setLoading(false);
@@ -61,15 +78,10 @@ export function Login() {
         }
 
         try {
-            // 1. Chamada REAL ao Backend (Sem simulação)
-            // O await aqui vai esperar o Java responder.
-            // Se o código estiver errado, o Java lança erro e o código pula pro 'catch'
             await userService.redefinirSenha(email, codigo, novaSenha);
 
-            // 2. Se chegou aqui, é SUCESSO absoluto
             setSucesso("Senha alterada com sucesso! Redirecionando...");
 
-            // 3. Limpa e volta para login após 2 segundos
             setTimeout(() => {
                 setIsResetMode(false);
                 setSucesso('');
@@ -80,7 +92,6 @@ export function Login() {
             }, 2000);
 
         } catch (error) {
-            // 4. Se o código estiver errado, cai AQUI
             console.error("Erro no reset:", error);
             setErro(error.message || "Código inválido ou expirado.");
         } finally {
@@ -157,7 +168,7 @@ export function Login() {
                                     onChange={(e) => setNovaSenha(e.target.value)}
                                     className="login-input"
                                     placeholder="********"
-                                    minLength={3} // Ajuste conforme sua regra de negócio
+                                    minLength={3}
                                     required
                                 />
                             </div>

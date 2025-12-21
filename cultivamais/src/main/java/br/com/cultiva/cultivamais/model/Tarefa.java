@@ -2,6 +2,7 @@ package br.com.cultiva.cultivamais.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // Importante!
 
 @Entity
 public class Tarefa {
@@ -12,28 +13,36 @@ public class Tarefa {
 
     private String titulo;
     private String descricao;
-    
-    @Enumerated(EnumType.STRING) // Salva como "ALTA", "MEDIA", "BAIXA" no banco
+
+    @Enumerated(EnumType.STRING)
     private Prioridade prioridade;
-    
-    private String categoria; // Ex: Irrigação, Adubação
-    
-    private LocalDateTime dataPrazo; // Compatível com input datetime-local
-    
+
+    private String categoria;
+    private LocalDateTime dataPrazo;
+
     private boolean concluida;
 
-    // Relacionamento com Usuário (para atribuir tarefas)
-    // FetchType.EAGER garante que os dados do usuário venham junto com a tarefa
+    // --- NOVOS CAMPOS ---
+    private boolean cancelada = false;
+    private String observacaoConclusao;
+
+    private LocalDateTime dataCriacao;
+    private LocalDateTime dataConclusao;
+
+    // --- CORREÇÃO DO LOOP INFINITO AQUI ---
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "usuario_id") 
+    @JoinColumn(name = "responsavel_id")
+    @JsonIgnoreProperties({"tarefasAtribuidas", "tarefasCriadas", "senha", "hibernateLazyInitializer", "handler"})
     private Usuario responsavel;
 
-    // --- CONSTRUTORES ---
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "criador_id")
+    @JsonIgnoreProperties({"tarefasAtribuidas", "tarefasCriadas", "senha", "hibernateLazyInitializer", "handler"})
+    private Usuario criador;
 
-    // Construtor vazio (Obrigatório para o JPA/Hibernate)
+    // --- CONSTRUTORES ---
     public Tarefa() {}
 
-    // Construtor completo (Facilita criação manual se precisar)
     public Tarefa(String titulo, String descricao, Prioridade prioridade, String categoria, LocalDateTime dataPrazo, Usuario responsavel) {
         this.titulo = titulo;
         this.descricao = descricao;
@@ -42,59 +51,47 @@ public class Tarefa {
         this.dataPrazo = dataPrazo;
         this.responsavel = responsavel;
         this.concluida = false;
+        this.cancelada = false;
     }
 
-    // --- GETTERS ---
-    
-    public Long getId() { 
-        return id; 
-    }
-    public String getTitulo() { 
-        return titulo; 
-    }
-    public String getDescricao() { 
-        return descricao;
-    }
-    public Prioridade getPrioridade() { 
-        return prioridade; 
-    }
-    public String getCategoria() { 
-        return categoria; 
-    }
-    public LocalDateTime getDataPrazo() { 
-        return dataPrazo; 
-    }
-    public boolean isConcluida() { 
-        return concluida; 
-    }
-    public Usuario getResponsavel() { 
-        return responsavel; 
-    }
+    // --- GETTERS E SETTERS ---
 
-    // --- SETTERS ---
-    
-    public void setId(Long id) { 
-        this.id = id; 
-    }
-    public void setTitulo(String titulo) { 
-        this.titulo = titulo; 
-    }
-    public void setDescricao(String descricao) { 
-        this.descricao = descricao; 
-    }
-    public void setPrioridade(Prioridade prioridade) { 
-        this.prioridade = prioridade; 
-    }
-    public void setCategoria(String categoria) { 
-        this.categoria = categoria; 
-    }
-    public void setDataPrazo(LocalDateTime dataPrazo) { 
-        this.dataPrazo = dataPrazo; 
-    }
-    public void setConcluida(boolean concluida) { 
-        this.concluida = concluida; 
-    }
-    public void setResponsavel(Usuario responsavel) {
-        this.responsavel = responsavel; 
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getTitulo() { return titulo; }
+    public void setTitulo(String titulo) { this.titulo = titulo; }
+
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public Prioridade getPrioridade() { return prioridade; }
+    public void setPrioridade(Prioridade prioridade) { this.prioridade = prioridade; }
+
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
+
+    public LocalDateTime getDataPrazo() { return dataPrazo; }
+    public void setDataPrazo(LocalDateTime dataPrazo) { this.dataPrazo = dataPrazo; }
+
+    public boolean isConcluida() { return concluida; }
+    public void setConcluida(boolean concluida) { this.concluida = concluida; }
+
+    public boolean isCancelada() { return cancelada; }
+    public void setCancelada(boolean cancelada) { this.cancelada = cancelada; }
+
+    public String getObservacaoConclusao() { return observacaoConclusao; }
+    public void setObservacaoConclusao(String observacaoConclusao) { this.observacaoConclusao = observacaoConclusao; }
+
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+
+    public LocalDateTime getDataConclusao() { return dataConclusao; }
+    public void setDataConclusao(LocalDateTime dataConclusao) { this.dataConclusao = dataConclusao; }
+
+    public Usuario getResponsavel() { return responsavel; }
+    public void setResponsavel(Usuario responsavel) { this.responsavel = responsavel; }
+
+    public Usuario getCriador() { return criador; }
+    public void setCriador(Usuario criador) { this.criador = criador; }
 }

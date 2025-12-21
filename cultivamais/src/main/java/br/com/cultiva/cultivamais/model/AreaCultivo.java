@@ -34,11 +34,11 @@ public class AreaCultivo {
     private String observacaoArea;
 
     @OneToMany(mappedBy = "areaCultivo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
+    @JsonIgnore // Garante que a Area não tente listar todos os cultivos e gere loop
     private List<Cultivo> cultivos = new ArrayList<>();
 
     public AreaCultivo (String nomeArea){
-        
+
         this.nomeArea = nomeArea;
         this.tamanhoArea = 0.0;
         this.tipoSolo = null;

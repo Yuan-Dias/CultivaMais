@@ -24,13 +24,18 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     private FuncaoUsuario funcao;
 
-    // --- CORREÇÃO AQUI ---
-    // O "mappedBy" TEM que ser igual ao nome da variável lá na classe Tarefa.
-    // Como na Tarefa você usou "private Usuario responsavel;", aqui usamos "responsavel".
-    @OneToMany(mappedBy = "responsavel", cascade = CascadeType.ALL)
-    @JsonIgnore // Evita o Loop Infinito (Erro 500)
-    private List<Tarefa> tarefas;
+    // --- RELACIONAMENTOS ---
+    // O @JsonIgnore aqui é FUNDAMENTAL. Não remova.
 
+    @OneToMany(mappedBy = "responsavel", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Tarefa> tarefasAtribuidas;
+
+    @OneToMany(mappedBy = "criador")
+    @JsonIgnore
+    private List<Tarefa> tarefasCriadas;
+
+    // --- CONSTRUTORES ---
     public Usuario(String nome, String email, String senha, FuncaoUsuario funcao) {
         this.nomeUsuario = nome;
         this.email = email;
@@ -41,23 +46,31 @@ public class Usuario {
 
     public Usuario() { }
 
-    // Getters
+    // --- GETTERS E SETTERS ---
     public Long getIdUsuario(){ return this.idUsuario; }
-    public String getNomeUsuario(){ return this.nomeUsuario; }
-    public String getEmail(){ return this.email; }
-    public String getSenha(){ return this.senha; }
-    public FuncaoUsuario getFuncao() { return this.funcao; }
-    public Boolean getAtivo() { return this.ativo; }
-    public String getCodigoRecuperacao() { return codigoRecuperacao; }
-    public List<Tarefa> getTarefas() { return tarefas; }
-
-    // Setters
     public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
+
+    public String getNomeUsuario(){ return this.nomeUsuario; }
     public void setNomeUsuario(String novoNome) { this.nomeUsuario = novoNome; }
+
+    public String getEmail(){ return this.email; }
     public void setEmail(String novoEmail){ this.email = novoEmail; }
+
+    public String getSenha(){ return this.senha; }
     public void setSenha(String novaSenha){ this.senha = novaSenha; }
+
+    public FuncaoUsuario getFuncao() { return this.funcao; }
     public void setFuncao(FuncaoUsuario funcao) { this.funcao = funcao; }
+
+    public Boolean getAtivo() { return this.ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+
+    public String getCodigoRecuperacao() { return codigoRecuperacao; }
     public void setCodigoRecuperacao(String codigoRecuperacao) { this.codigoRecuperacao = codigoRecuperacao; }
-    public void setTarefas(List<Tarefa> tarefas) { this.tarefas = tarefas; }
+
+    public List<Tarefa> getTarefasAtribuidas() { return tarefasAtribuidas; }
+    public void setTarefasAtribuidas(List<Tarefa> tarefasAtribuidas) { this.tarefasAtribuidas = tarefasAtribuidas; }
+
+    public List<Tarefa> getTarefasCriadas() { return tarefasCriadas; }
+    public void setTarefasCriadas(List<Tarefa> tarefasCriadas) { this.tarefasCriadas = tarefasCriadas; }
 }

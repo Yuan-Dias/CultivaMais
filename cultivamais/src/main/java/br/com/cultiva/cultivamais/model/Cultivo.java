@@ -29,12 +29,16 @@ public class Cultivo {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name  = "planta_id")
+    // IMPORTANTE: Evita erro de proxy do Hibernate
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Planta plantaCultivada;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "areaCultivo_id")
-    @JsonIgnoreProperties("cultivos")
+    // IMPORTANTE: Ignora a lista de volta e os proxies para não travar
+    @JsonIgnoreProperties({"cultivos", "hibernateLazyInitializer", "handler"})
     private AreaCultivo areaCultivo;
+
     private LocalDate dataPlantio;
     private LocalDate previsaoColheita;
     private LocalDate dataColheitaFinal;
@@ -53,7 +57,7 @@ public class Cultivo {
     private List<Evento> eventosRegistrados = new ArrayList<>();
 
     public Cultivo(Planta plantaCultivada, AreaCultivo areaCultivo, LocalDate dataPlantio, double quantidadePlantada){
-    
+
         this.plantaCultivada = plantaCultivada;
         this.areaCultivo = areaCultivo;
         this.dataPlantio = dataPlantio;
@@ -63,11 +67,11 @@ public class Cultivo {
         this.estadoPlanta = EstadoPlanta.SAUDAVEL;
         this.statusCultivo = StatusCultivo.ATIVO;
         this.observacaoCultivo = "";
-        
+
         this.quantidadeColhida = 0.0;
         if (plantaCultivada != null) {
             this.previsaoColheita = dataPlantio.plusDays(plantaCultivada.getCicloMedioDias());
-        }        
+        }
         this.eventosRegistrados = new ArrayList<>();
     }
 
@@ -145,17 +149,17 @@ public class Cultivo {
     public void setQuantidadePlantada(double quantidadePlantada) {
         this.quantidadePlantada = quantidadePlantada;
     }
-    public void setQuantidadeColhida(double quantidadeColhida) {   
+    public void setQuantidadeColhida(double quantidadeColhida) {
         this.quantidadeColhida = quantidadeColhida;
     }
     public void setEventosRegistrados(List<Evento> eventosRegistrados){
         this.eventosRegistrados = eventosRegistrados;
     }
     @JsonFormat(pattern = "yyyy-MM-dd")
-    public void setPrevisaoColheita(LocalDate previsaoColheita) { 
-        this.previsaoColheita = previsaoColheita; 
+    public void setPrevisaoColheita(LocalDate previsaoColheita) {
+        this.previsaoColheita = previsaoColheita;
     }
-    
+
     public void adicionarEvento(Evento novoEvento) {
         if (novoEvento != null) {
             if (this.eventosRegistrados == null) {
