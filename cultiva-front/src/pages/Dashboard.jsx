@@ -5,7 +5,9 @@ import {
     Activity, Bug, ClipboardList, PieChart as IconeGrafico,
     TrendingUp, Leaf, CheckCircle, AlertCircle,
     ChevronLeft, ChevronRight, Filter, Lightbulb, Sparkles, ArrowRight, X,
-    ClipboardX, PackageOpen, CalendarOff
+    ClipboardX, PackageOpen, CalendarOff, Ban,
+    // Novos ícones adicionados para a dashboard de tarefas
+    User, Clock, Calendar, CheckCircle2
 } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
@@ -26,7 +28,7 @@ import {
 
 // --- COMPONENTES VISUAIS INTERNOS ---
 
-const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => {
+const StatCard = ({ title, value, subtext, icon: Icon, colorClass, trend }) => {
     return (
         <div className="kpi-card">
             <div className="kpi-header">
@@ -37,7 +39,14 @@ const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => {
             </div>
             <div>
                 <div className="kpi-value">{value}</div>
-                <div className="kpi-subtext">{subtext}</div>
+                <div className="kpi-subtext" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{subtext}</span>
+                    {trend && (
+                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: trend === 'bad' ? '#ef4444' : '#16a34a', marginLeft: '8px' }}>
+                            {trend === 'bad' ? '▼ Atenção' : '▲ Bom'}
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -68,7 +77,7 @@ const ChartCard = ({ title, subtitle, icon: Icon, children, headerControls }) =>
     );
 };
 
-// --- NOVO COMPONENTE: EMPTY STATE (ESTADO VAZIO) ---
+// --- COMPONENTE: EMPTY STATE (ESTADO VAZIO) ---
 const EmptyState = ({ icon: Icon, title, message }) => (
     <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -99,7 +108,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                 <p style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '4px', color: '#1e293b' }}>{label}</p>
                 {payload.map((entry, index) => (
                     <p key={index} style={{ color: entry.color, fontSize: '0.85rem', margin: 0 }}>
-                        {entry.name === 'plantado' ? 'Plantado' : entry.name === 'colhido' ? 'Colhido' : entry.name}:
+                        {entry.name}:
                         <span style={{ fontWeight: 600, marginLeft: '4px' }}>
                             {typeof entry.value === 'number' ? entry.value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : entry.value}
                         </span>
@@ -113,17 +122,28 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const criarDataLocal = (dataString) => {
     if (!dataString) return null;
-    const [ano, mes, dia] = dataString.split('-').map(Number);
+    // Tenta lidar com ISO Date (yyyy-MM-dd) ou DateTime
+    const dataPart = dataString.split('T')[0];
+    const [ano, mes, dia] = dataPart.split('-').map(Number);
     return new Date(ano, mes - 1, dia);
 };
 
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('geral');
 
+    // Recupera usuário logado para lógica de permissão e filtros
+    const [usuarioLogado] = useState(() => {
+        try {
+            const dados = localStorage.getItem('usuarioLogado');
+            return dados ? JSON.parse(dados) : null;
+        } catch (e) { return null; }
+    });
+
     // Estados de Dados
     const [rawCultivos, setRawCultivos] = useState([]);
     const [rawPlantas, setRawPlantas] = useState([]);
     const [rawAreas, setRawAreas] = useState([]);
+    const [rawTarefas, setRawTarefas] = useState([]); // Guardamos todas as tarefas brutas
     const [kpis, setKpis] = useState({ ativos: 0, saudaveis: 0, tarefasPendentes: 0, tarefasConcluidas: 0 });
 
     // Estados de Clima
@@ -142,17 +162,29 @@ const Dashboard = () => {
         dataPlantio: new Date().toISOString().split('T')[0]
     });
 
-    // Estados Gráficos
-    const [graficoTipos, setGraficoTipos] = useState([]);
-    const [graficoSaude, setGraficoSaude] = useState([]);
-    const [graficoTarefas, setGraficoTarefas] = useState([]);
-
     // Filtros de Produção
     const [filtroTipo, setFiltroTipo] = useState('geral');
     const [filtroId, setFiltroId] = useState('');
     const [dataReferencia, setDataReferencia] = useState(new Date());
 
-    const COLORS = { green: '#16a34a', orange: '#f59e0b', blue: '#0ea5e9', red: '#ef4444', purple: '#8b5cf6', gray: '#94a3b8' };
+    // --- FILTROS DE TAREFAS (AVANÇADO) ---
+    // Define padrão: últimos 30 dias até hoje
+    const [filtroTarefaInicio, setFiltroTarefaInicio] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().split('T')[0];
+    });
+    const [filtroTarefaFim, setFiltroTarefaFim] = useState(new Date().toISOString().split('T')[0]);
+    // Filtro por responsável: 'TODOS' ou ID do usuário
+    const [filtroResponsavel, setFiltroResponsavel] = useState('TODOS');
+
+    // Estados Gráficos Gerais
+    const [graficoTipos, setGraficoTipos] = useState([]);
+    const [graficoSaude, setGraficoSaude] = useState([]);
+
+    const [filtroPontualidade, setFiltroPontualidade] = useState('PENDENTES');
+
+    const COLORS = { green: '#16a34a', orange: '#f59e0b', blue: '#0ea5e9', red: '#ef4444', purple: '#8b5cf6', gray: '#94a3b8', darkRed: '#991b1b', yellow: '#eab308' };
     const PIE_COLORS = [COLORS.green, COLORS.orange, COLORS.blue, COLORS.purple];
 
     const tabs = [
@@ -168,7 +200,6 @@ const Dashboard = () => {
         const sugestoesCalculadas = [];
         const mapaLuz = { 'PLENO_SOL': ['ALTA'], 'MEIA_SOMBRA': ['MEDIA', 'BAIXA'], 'SOMBRA': ['BAIXA'] };
 
-        // IDs ocupados
         const areasOcupadasIds = cultivos
             .filter(c => c.statusCultivo === 'ATIVO' && c.areaCultivo)
             .map(c => c.areaCultivo.idArea);
@@ -184,13 +215,11 @@ const Dashboard = () => {
                 let score = 0;
                 let motivos = [];
 
-                // Solo (Peso 50)
                 if (planta.solosRecomendados && planta.solosRecomendados.includes(area.tipoSolo)) {
                     score += 50;
                     motivos.push(`Solo ideal (${area.tipoSolo})`);
                 }
 
-                // Luz (Peso 30)
                 const luzArea = area.quantidadeLuz || 'PLENO_SOL';
                 const luzNecessaria = planta.necessidadeLuz || 'ALTA';
                 const compativeis = mapaLuz[luzArea] || [];
@@ -199,7 +228,6 @@ const Dashboard = () => {
                     motivos.push(`Luz perfeita (${luzArea})`);
                 }
 
-                // Ciclo Rápido (Peso 10)
                 if (planta.cicloMedioDias && planta.cicloMedioDias < 90) score += 10;
 
                 if (score > maiorScore) {
@@ -227,11 +255,17 @@ const Dashboard = () => {
 
     const carregarDadosGerais = async () => {
         try {
+            // Monta URL de tarefas com filtro de usuário se existir
+            let urlTarefas = 'http://localhost:8090/api/tarefas';
+            if (usuarioLogado) {
+                urlTarefas += `?idUsuario=${usuarioLogado.idUsuario}&funcao=${usuarioLogado.funcao}`;
+            }
+
             const [areasRes, plantasRes, cultivosRes, tarefasRes] = await Promise.all([
                 fetch('http://localhost:8090/api/areas').catch(() => ({ ok: false })),
                 fetch('http://localhost:8090/api/plantas').catch(() => ({ ok: false })),
                 fetch('http://localhost:8090/api/cultivos').catch(() => ({ ok: false })),
-                fetch('http://localhost:8090/api/tarefas').catch(() => ({ ok: false }))
+                fetch(urlTarefas).catch(() => ({ ok: false }))
             ]);
 
             const areas = areasRes.ok ? await areasRes.json() : [];
@@ -242,15 +276,19 @@ const Dashboard = () => {
             setRawAreas(areas);
             setRawPlantas(plantas);
             setRawCultivos(cultivos);
+            setRawTarefas(tarefas);
 
             const sugestoesGeradas = gerarSugestoesInteligentes(areas, plantas, cultivos);
             setSugestoesInteligentes(sugestoesGeradas);
 
             if (areas.length > 0 && !idAreaClimaSelecionada) setIdAreaClimaSelecionada(areas[0].idArea);
 
+            // KPIs
             const ativos = cultivos.filter(c => c.statusCultivo === 'ATIVO');
             const saudaveis = ativos.filter(c => c.estadoPlanta === 'SAUDAVEL').length;
-            const pendentes = tarefas.filter(t => !t.concluida).length;
+
+            // Lógica KPI de Tarefas (Considerando Canceladas)
+            const pendentes = tarefas.filter(t => !t.concluida && !t.cancelada).length;
             const concluidas = tarefas.filter(t => t.concluida).length;
 
             setKpis({ ativos: ativos.length, saudaveis, tarefasPendentes: pendentes, tarefasConcluidas: concluidas });
@@ -269,13 +307,6 @@ const Dashboard = () => {
                 { name: 'Praga', valor: saudeCount['COM_PRAGA'], fill: '#ef5350' },
                 { name: 'Crítico', valor: saudeCount['CRITICO'], fill: COLORS.red }
             ]);
-
-            // Só preenche se houver tarefas
-            if (pendentes > 0 || concluidas > 0) {
-                setGraficoTarefas([{ name: 'Pendentes', value: pendentes }, { name: 'Concluídas', value: concluidas }]);
-            } else {
-                setGraficoTarefas([]);
-            }
 
         } catch (error) { console.error("Erro ao carregar dashboard:", error); }
     };
@@ -297,6 +328,169 @@ const Dashboard = () => {
         };
         void carregarDadosAreaEspecifica();
     }, [idAreaClimaSelecionada, rawAreas]);
+
+    // --- LISTA DE USUÁRIOS PARA FILTRO DE TAREFAS ---
+    // Extrai usuários únicos das tarefas carregadas para popular o select de filtro
+    const usuariosParaFiltro = useMemo(() => {
+        const mapUsuarios = new Map();
+        rawTarefas.forEach(t => {
+            if (t.responsavel) {
+                mapUsuarios.set(t.responsavel.idUsuario, t.responsavel.nomeUsuario);
+            }
+        });
+        return Array.from(mapUsuarios.entries()).map(([id, nome]) => ({ id, nome }));
+    }, [rawTarefas]);
+
+    // --- PROCESSAMENTO ANALÍTICO DE TAREFAS (SOLUÇÃO DEFINITIVA DATA STRING) ---
+    const dadosTarefasAnaliticos = useMemo(() => {
+        if (!rawTarefas.length) return null;
+
+        // Função mágica: Transforma qualquer data em um número inteiro YYYYMMDD
+        // Exemplo: "2023-12-25" vira 20231225.
+        // Isso IGNORA fusos horários e horas. É comparação pura de calendário.
+        const converterParaInteiro = (valor) => {
+            if (!valor) return 0;
+
+            let dataStr = '';
+
+            // Se já vier como objeto Date (ex: new Date()), pega os dados locais
+            if (valor instanceof Date) {
+                const ano = valor.getFullYear();
+                const mes = String(valor.getMonth() + 1).padStart(2, '0');
+                const dia = String(valor.getDate()).padStart(2, '0');
+                return parseInt(`${ano}${mes}${dia}`, 10);
+            }
+
+            // Se for string (ex: "2023-10-25" ou "2023-10-25T14:00:00")
+            // Pegamos apenas a primeira parte antes do T
+            if (typeof valor === 'string') {
+                dataStr = valor.split('T')[0]; // Garante que pega só YYYY-MM-DD
+            }
+
+            // Remove os traços: 2023-10-25 -> 20231025
+            const numeroLimpo = dataStr.replace(/-/g, '');
+            return parseInt(numeroLimpo, 10) || 0;
+        };
+
+        // Prepara números para filtro
+        const inicioInt = converterParaInteiro(filtroTarefaInicio);
+        const fimInt = converterParaInteiro(filtroTarefaFim);
+        const hojeInt = converterParaInteiro(new Date()); // Data de hoje local
+
+        // 1. Filtragem Inicial
+        const tarefasFiltradas = rawTarefas.filter(t => {
+            // Usa data de criação se não tiver prazo, para não sumir do filtro
+            const dataRefInt = t.dataPrazo ? converterParaInteiro(t.dataPrazo) : converterParaInteiro(t.dataCriacao);
+
+            const dentroDoPrazo = dataRefInt >= inicioInt && dataRefInt <= fimInt;
+            const matchResponsavel = filtroResponsavel === 'TODOS' || (t.responsavel && String(t.responsavel.idUsuario) === String(filtroResponsavel));
+
+            return dentroDoPrazo && matchResponsavel;
+        });
+
+        // 2. Cálculo de Métricas
+        let pendentes = 0;
+        let concluidas = 0;
+        let canceladas = 0;
+
+        let pendentesNoPrazo = 0;
+        let pendentesAtrasadas = 0;
+
+        let concluidasNoPrazo = 0;
+        let concluidasComAtraso = 0;
+
+        const timelineMap = {};
+
+        tarefasFiltradas.forEach(t => {
+            // Converte tudo para número inteiro (YYYYMMDD)
+            const prazoInt = converterParaInteiro(t.dataPrazo);
+            const conclusaoInt = t.dataConclusao ? converterParaInteiro(t.dataConclusao) : 0;
+
+            // Para o gráfico de linha, mantemos um objeto Date apenas visual
+            const dataVisual = t.dataPrazo ? new Date(t.dataPrazo) : new Date();
+            const diaKey = dataVisual.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+            if (!timelineMap[diaKey]) {
+                timelineMap[diaKey] = { nome: diaKey, pendentes: 0, concluidas: 0, sortDate: prazoInt };
+            }
+
+            if (t.cancelada) {
+                canceladas++;
+            }
+            else if (t.concluida) {
+                concluidas++;
+                timelineMap[diaKey].concluidas++;
+
+                // LÓGICA DE PONTUALIDADE (CONCLUÍDAS)
+                if (prazoInt > 0) {
+                    // Se concluiu (20231025) > Prazo (20231025)? FALSO. Então é No Prazo.
+                    // Só entra aqui se concluiu dia 26 ou depois.
+                    if (conclusaoInt > prazoInt) {
+                        concluidasComAtraso++;
+                    } else {
+                        concluidasNoPrazo++;
+                    }
+                } else {
+                    // Sem prazo definido = No Prazo
+                    concluidasNoPrazo++;
+                }
+            }
+            else {
+                // Pendente
+                pendentes++;
+                timelineMap[diaKey].pendentes++;
+
+                // LÓGICA DE PONTUALIDADE (PENDENTES)
+                if (prazoInt > 0) {
+                    // Se Prazo (20) < Hoje (21) -> Atrasada
+                    if (prazoInt < hojeInt) {
+                        pendentesAtrasadas++;
+                    } else {
+                        // Se Prazo (21) == Hoje (21) ou Prazo (22) > Hoje (21) -> No Prazo
+                        pendentesNoPrazo++;
+                    }
+                } else {
+                    pendentesNoPrazo++;
+                }
+            }
+        });
+
+        // 3. Montagem dos Gráficos
+        const graficoStatus = [
+            { name: 'Concluídas', value: concluidas, fill: COLORS.green },
+            { name: 'Pendentes', value: pendentes, fill: COLORS.yellow },
+            { name: 'Canceladas', value: canceladas, fill: COLORS.gray }
+        ].filter(d => d.value > 0);
+
+        const graficoPontualidadePendentes = [
+            { name: 'No Prazo', value: pendentesNoPrazo, fill: COLORS.blue },
+            { name: 'Atrasadas', value: pendentesAtrasadas, fill: COLORS.red }
+        ].filter(d => d.value > 0);
+
+        const graficoPontualidadeConcluidas = [
+            { name: 'No Prazo', value: concluidasNoPrazo, fill: COLORS.green },
+            { name: 'Com Atraso', value: concluidasComAtraso, fill: COLORS.orange }
+        ].filter(d => d.value > 0);
+
+        const graficoTimeline = Object.values(timelineMap)
+            .sort((a, b) => a.sortDate - b.sortDate)
+            .map(({ nome, pendentes, concluidas }) => ({ nome, pendentes, concluidas }));
+
+        return {
+            metricas: {
+                total: tarefasFiltradas.length,
+                pendentes, concluidas, canceladas,
+                atrasadas: pendentesAtrasadas,
+                concluidasComAtraso,
+                concluidasNoPrazo
+            },
+            graficoStatus,
+            graficoPontualidadePendentes,
+            graficoPontualidadeConcluidas,
+            graficoTimeline
+        };
+
+    }, [rawTarefas, filtroTarefaInicio, filtroTarefaFim, filtroResponsavel]);
 
     // --- AÇÕES DO BOTÃO PLANTAR AGORA ---
     const abrirModalPlantio = () => {
@@ -331,7 +525,7 @@ const Dashboard = () => {
                 if(res.ok) {
                     alert('Cultivo iniciado com sucesso! 🌱');
                     setModalPlantioAberto(false);
-                    carregarDadosGerais(); // Atualiza tudo e remove sugestão da lista
+                    carregarDadosGerais();
                     setIndiceSugestao(0);
                 } else {
                     alert('Erro ao iniciar cultivo.');
@@ -357,7 +551,6 @@ const Dashboard = () => {
             historicoMap.set(`${mesesNomes[d.getMonth()]}/${d.getFullYear().toString().slice(2)}`, { plantado: 0, colhido: 0 });
         }
 
-        // Filtra por seleção do usuário
         const cultivosFiltrados = rawCultivos.filter(c => {
             if (filtroTipo === 'geral') return true;
             if (filtroTipo === 'planta' && filtroId) return c.plantaCultivada && c.plantaCultivada.idPlanta.toString() === filtroId.toString();
@@ -365,7 +558,6 @@ const Dashboard = () => {
             return true;
         });
 
-        // Popula os dados
         cultivosFiltrados.forEach(c => {
             if (c.statusCultivo === 'COLHIDO' && c.dataColheitaFinal) {
                 const d = criarDataLocal(c.dataColheitaFinal);
@@ -385,7 +577,6 @@ const Dashboard = () => {
         return Array.from(historicoMap, ([label, vals]) => ({ name: label, ...vals }));
     }, [rawCultivos, filtroTipo, filtroId, dataReferencia]);
 
-    // Verifica se tem dados para mostrar no gráfico
     const temDadosProducao = dadosProducaoFiltrados.some(d => d.plantado > 0 || d.colhido > 0);
 
     const dadosVisaoGeral = useMemo(() => {
@@ -481,7 +672,7 @@ const Dashboard = () => {
             <div className="kpi-grid">
                 <StatCard title="Cultivos Ativos" value={kpis.ativos} subtext="Monitoramento em tempo real" icon={Sprout} colorClass="bg-green-light" />
                 <StatCard title="Plantas Saudáveis" value={kpis.saudaveis} subtext={`${kpis.ativos > 0 ? Math.round((kpis.saudaveis / kpis.ativos) * 100) : 0}% do total ativo`} icon={CheckCircle} colorClass="bg-blue-light" />
-                <StatCard title="Alertas Pendentes" value={kpis.tarefasPendentes} subtext="Tarefas não concluídas" icon={AlertCircle} colorClass="bg-red-light" />
+                <StatCard title="Tarefas Pendentes" value={kpis.tarefasPendentes} subtext="Exclui canceladas" icon={AlertCircle} colorClass="bg-red-light" />
                 <StatCard title="Tarefas Concluídas" value={kpis.tarefasConcluidas} subtext="Histórico total" icon={ClipboardList} colorClass="bg-purple-light" />
             </div>
 
@@ -587,25 +778,154 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'tarefas' && (
-                    <div style={{ width: '100%' }}>
-                        <ChartCard title="Status das Tarefas" subtitle="Progresso das atividades operacionais" icon={ClipboardList}>
-                            {graficoTarefas.length > 0 ? (
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                        {/* --- BARRA DE FILTROS --- */}
+                        <div style={{
+                            background: 'white', padding: '16px', borderRadius: '12px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid #e2e8f0'
+                        }}>
+                            <div style={{display:'flex', alignItems:'center', gap:'8px', color:'#64748b', fontWeight:600, fontSize: '0.9rem'}}>
+                                <Filter size={16} /> Filtros:
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid #e2e8f0', paddingRight: '16px' }}>
+                                <input type="date" value={filtroTarefaInicio} onChange={e => setFiltroTarefaInicio(e.target.value)}
+                                       style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', fontSize: '0.85rem', color: '#475569' }} />
+                                <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>até</span>
+                                <input type="date" value={filtroTarefaFim} onChange={e => setFiltroTarefaFim(e.target.value)}
+                                       style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', fontSize: '0.85rem', color: '#475569' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <User size={16} color="#64748b" />
+                                <select
+                                    value={filtroResponsavel}
+                                    onChange={e => setFiltroResponsavel(e.target.value)}
+                                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', outline: 'none', cursor: 'pointer', backgroundColor: 'white', minWidth: '150px' }}
+                                >
+                                    <option value="TODOS">Todos os Usuários</option>
+                                    {usuariosParaFiltro && usuariosParaFiltro.map(u => (
+                                        <option key={u.id} value={u.id}>{u.nome}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* --- KPIs ESTATÍSTICOS --- */}
+                        {dadosTarefasAnaliticos && (
+                            <div className="kpi-grid">
+                                <StatCard title="Total no Período" value={dadosTarefasAnaliticos.metricas.total} subtext="Tarefas filtradas" icon={ClipboardList} colorClass="bg-blue-light" />
+                                <StatCard
+                                    title="Pendentes Atrasadas"
+                                    value={dadosTarefasAnaliticos.metricas.atrasadas}
+                                    subtext="Atenção Necessária"
+                                    icon={AlertCircle}
+                                    colorClass="bg-red-light"
+                                />
+                                <StatCard title="Concluídas c/ Atraso" value={dadosTarefasAnaliticos.metricas.concluidasComAtraso} subtext="Entregues fora do prazo" icon={CheckCircle} colorClass="bg-orange-light" />
+                            </div>
+                        )}
+
+                        {/* --- GRÁFICOS --- */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                            <ChartCard
+                                title="Status das Tarefas"
+                                subtitle="Visão geral do progresso"
+                                icon={PieChart}
+                            >
+                                {dadosTarefasAnaliticos && dadosTarefasAnaliticos.graficoStatus.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={dadosTarefasAnaliticos.graficoStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" paddingAngle={2}
+                                                label={({ percent }) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                            >
+                                                {dadosTarefasAnaliticos.graficoStatus.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                            </Pie>
+                                            <Tooltip content={CustomTooltip} />
+                                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyState icon={ClipboardX} title="Sem Dados" message="Nenhuma tarefa encontrada." />
+                                )}
+                            </ChartCard>
+
+                            {/* GRÁFICO PONTUALIDADE DINÂMICO */}
+                            <ChartCard
+                                title="Pontualidade"
+                                subtitle={filtroPontualidade === 'PENDENTES' ? "Prazos das tarefas abertas" : "Performance de entrega"}
+                                icon={Clock}
+                                headerControls={
+                                    <div style={{display:'flex', background:'#f1f5f9', borderRadius:'6px', padding:'2px', gap:'2px'}}>
+                                        <button
+                                            onClick={() => setFiltroPontualidade('PENDENTES')}
+                                            style={{
+                                                padding:'4px 12px', borderRadius:'4px', border:'none', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', transition: 'all 0.2s',
+                                                background: filtroPontualidade === 'PENDENTES' ? 'white' : 'transparent',
+                                                color: filtroPontualidade === 'PENDENTES' ? '#0f172a' : '#64748b',
+                                                boxShadow: filtroPontualidade === 'PENDENTES' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                                            }}
+                                        >Pendentes</button>
+                                        <button
+                                            onClick={() => setFiltroPontualidade('CONCLUIDAS')}
+                                            style={{
+                                                padding:'4px 12px', borderRadius:'4px', border:'none', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', transition: 'all 0.2s',
+                                                background: filtroPontualidade === 'CONCLUIDAS' ? 'white' : 'transparent',
+                                                color: filtroPontualidade === 'CONCLUIDAS' ? '#0f172a' : '#64748b',
+                                                boxShadow: filtroPontualidade === 'CONCLUIDAS' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                                            }}
+                                        >Concluídas</button>
+                                    </div>
+                                }
+                            >
+                                {dadosTarefasAnaliticos && (
+                                    (filtroPontualidade === 'PENDENTES' && dadosTarefasAnaliticos.graficoPontualidadePendentes.length > 0) ||
+                                    (filtroPontualidade === 'CONCLUIDAS' && dadosTarefasAnaliticos.graficoPontualidadeConcluidas.length > 0)
+                                ) ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={filtroPontualidade === 'PENDENTES' ? dadosTarefasAnaliticos.graficoPontualidadePendentes : dadosTarefasAnaliticos.graficoPontualidadeConcluidas}
+                                                cx="50%" cy="50%" outerRadius={100} dataKey="value"
+                                                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                                            >
+                                                {(filtroPontualidade === 'PENDENTES' ? dadosTarefasAnaliticos.graficoPontualidadePendentes : dadosTarefasAnaliticos.graficoPontualidadeConcluidas).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip content={CustomTooltip} />
+                                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyState icon={Clock} title="Sem Dados" message="Não há tarefas nesta categoria." />
+                                )}
+                            </ChartCard>
+                        </div>
+
+                        {/* Timeline (Mantido igual) */}
+                        <ChartCard title="Cronograma de Atividades" subtitle="Volume de tarefas por data de prazo" icon={Calendar}>
+                            {dadosTarefasAnaliticos && dadosTarefasAnaliticos.graficoTimeline.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={graficoTarefas} cx="50%" cy="50%" innerRadius={0} outerRadius={120} dataKey="value" labelLine={false} label={({ name, percent }) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}>
-                                            <Cell fill="#fbbf24" name="Pendentes" />
-                                            <Cell fill="#16a34a" name="Concluídas" />
-                                        </Pie>
+                                    <AreaChart data={dadosTarefasAnaliticos.graficoTimeline} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorPendentes" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={COLORS.blue} stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor={COLORS.blue} stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis dataKey="nome" fontSize={12} tickMargin={10} />
+                                        <YAxis fontSize={12} />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <Tooltip content={CustomTooltip} />
-                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                    </PieChart>
+                                        <Area type="monotone" dataKey="pendentes" stroke={COLORS.blue} fillOpacity={1} fill="url(#colorPendentes)" name="Pendentes/Abertas" />
+                                        <Area type="monotone" dataKey="concluidas" stroke={COLORS.green} fill="transparent" strokeDasharray="5 5" name="Concluídas" />
+                                    </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <EmptyState
-                                    icon={ClipboardX}
-                                    title="Sem Tarefas Pendentes"
-                                    message="Tudo limpo! Pode descansar a botina por enquanto. 👢"
-                                />
+                                <EmptyState icon={Calendar} title="Sem Dados" message="Nenhum dado temporal disponível." />
                             )}
                         </ChartCard>
                     </div>

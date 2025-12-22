@@ -30,6 +30,7 @@ public class TarefaService {
 
         if (criador != null) {
             novaTarefa.setCriador(criador);
+            // Se o responsável não for informado, define o próprio criador
             novaTarefa.setResponsavel(responsavel != null ? responsavel : criador);
             novaTarefa.setConcluida(false);
             novaTarefa.setCancelada(false); // Tarefa nasce ativa
@@ -45,18 +46,22 @@ public class TarefaService {
         return null;
     }
 
-    // --- NOVO MÉTODO: LISTAR TODAS (USADO PELO DASHBOARD) ---
+    // --- LISTAR TODAS (USADO PELO DASHBOARD) ---
     public List<Tarefa> listarTodas() {
         return tarefaRepository.findAll();
     }
 
-    // --- LISTAR POR USUÁRIO ---
+    // --- LISTAR POR USUÁRIO (CORRIGIDO) ---
     public List<Tarefa> listarTarefasPorUsuario(Long idUsuario, String funcao) {
-        // Se for ADMIN, EMPRESA ou ADMINISTRADOR, vê tudo. Senão, só as suas.
+        // Se for ADMIN, EMPRESA ou ADMINISTRADOR, vê tudo.
         if ("ADMIN".equalsIgnoreCase(funcao) || "EMPRESA".equalsIgnoreCase(funcao) || "ADMINISTRADOR".equalsIgnoreCase(funcao)) {
             return tarefaRepository.findAll();
         } else {
-            return tarefaRepository.findByResponsavelIdUsuario(idUsuario);
+            // --- CORREÇÃO AQUI ---
+            // Antes buscava apenas tarefas onde o usuário era o RESPONSÁVEL.
+            // Agora busca tarefas onde ele é RESPONSÁVEL *OU* onde ele é o CRIADOR.
+            // Passamos o mesmo ID duas vezes para preencher os dois parâmetros da query.
+            return tarefaRepository.findByResponsavel_IdUsuarioOrCriador_IdUsuario(idUsuario, idUsuario);
         }
     }
 
