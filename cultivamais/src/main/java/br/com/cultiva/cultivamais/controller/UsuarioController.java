@@ -4,14 +4,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import br.com.cultiva.cultivamais.model.Usuario;
-import br.com.cultiva.cultivamais.service.UsuarioService;
-import br.com.cultiva.cultivamais.service.LogService;
+import jakarta.validation.Valid;
+import br.com.cultiva.cultivamais.dto.UsuarioCadastroDTO;
 import br.com.cultiva.cultivamais.dto.LoginRequest;
+import br.com.cultiva.cultivamais.model.Usuario;
+import br.com.cultiva.cultivamais.service.LogService;
+import br.com.cultiva.cultivamais.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -28,10 +30,20 @@ public class UsuarioController {
         return "Yuan Admin";
     }
 
+    // --- CADASTRO COM VALIDAÇÃO E SEGURANÇA ---
     @PostMapping
-    public ResponseEntity<Usuario> criarUsuario(@RequestBody Usuario usuario) {
-        Usuario usuarioSalvo = usuarioService.criarUsuario(usuario);
-        // O log de criação já está no Service, ou pode adicionar aqui se preferir centralizar
+    public ResponseEntity<Usuario> criarUsuario(@Valid @RequestBody UsuarioCadastroDTO usuarioDTO) {
+
+        // 1. Converter DTO para Entidade
+        Usuario novoUsuario = new Usuario();
+        novoUsuario.setNomeUsuario(usuarioDTO.getNomeUsuario());
+        novoUsuario.setEmail(usuarioDTO.getEmail());
+        novoUsuario.setSenha(usuarioDTO.getSenha()); // Service vai criptografar
+        novoUsuario.setFuncao(usuarioDTO.getFuncao());
+
+        // 2. Chamar o serviço
+        Usuario usuarioSalvo = usuarioService.criarUsuario(novoUsuario);
+
         return ResponseEntity.ok(usuarioSalvo);
     }
 
@@ -52,31 +64,25 @@ public class UsuarioController {
         }
 
         // IMPORTANTÍSSIMO: Guardar o estado do boolean ANTES de chamar o service.atualizar
-        // Se pegarmos depois, o objeto usuarioAntigo pode ter sido atualizado por referência pelo Hibernate
         boolean eraAtivo = Boolean.TRUE.equals(usuarioAntigo.getAtivo());
 
         // 2. Realizar a atualização no Banco
         Usuario atualizado = usuarioService.atualizarUsuario(id, usuarioNovosDados);
 
-        // 3. Verificar como ficou o status AGORA (do objeto retornado do banco)
+        // 3. Verificar como ficou o status AGORA
         boolean ficouAtivo = Boolean.TRUE.equals(atualizado.getAtivo());
 
         // 4. Definir a mensagem do Log
-        String acaoLog = "Editou \"" + atualizado.getNomeUsuario() + "\""; // Padrão
+        String acaoLog = "Editou \"" + atualizado.getNomeUsuario() + "\"";
 
-        // Lógica de comparação
         if (eraAtivo && !ficouAtivo) {
             acaoLog = "Bloqueou o usuário \"" + atualizado.getNomeUsuario() + "\"";
         } else if (!eraAtivo && ficouAtivo) {
             acaoLog = "Desbloqueou o usuário \"" + atualizado.getNomeUsuario() + "\"";
         }
-        // Se o status não mudou (ex: editou só o email), mantém "Editou..."
 
         // 5. Salvar o Log
         String ator = getUsuarioLogado();
-
-        // Se o front enviar uma "reason" ou "mensagem" customizada, podemos concatenar (opcional)
-        // Mas a lógica acima já garante o texto correto.
         logService.registrarLog(ator, acaoLog);
 
         return ResponseEntity.ok(atualizado);
@@ -95,6 +101,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<Usuario> login(@RequestBody LoginRequest loginRequest) {
         Usuario usuarioLogado = usuarioService.autenticar(
@@ -103,8 +110,7 @@ public class UsuarioController {
         );
 
         if (usuarioLogado != null) {
-            // O log já é feito no Service.autenticar, mas se quiser garantir:
-            // logService.registrarLog(usuarioLogado.getNomeUsuario(), "Realizou Login");
+            usuarioLogado.setSenha(null); // Nunca retorne hash ou senha
             return ResponseEntity.ok(usuarioLogado);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -119,7 +125,6 @@ public class UsuarioController {
         String codigo = usuarioService.gerarCodigoRecuperacao(email);
 
         if (codigo != null) {
-            // Log já feito no service
             return ResponseEntity.ok(Map.of("codigo", codigo));
         }
         return ResponseEntity.badRequest().build();

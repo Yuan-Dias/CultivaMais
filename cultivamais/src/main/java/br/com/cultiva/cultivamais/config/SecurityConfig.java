@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+// ADICIONE ESSES IMPORTS:
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @EnableWebSecurity
@@ -13,18 +16,18 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. IMPORTANTE: Integra com sua configuração de CORS existente
                 .cors(cors -> cors.configure(http))
-
-                // 2. Desativa CSRF (Necessário para APIs REST)
                 .csrf(csrf -> csrf.disable())
-
-                // 3. Libera acesso total (já que você está controlando login manualmente no Controller)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll() // Libera todas as rotas da API
-                        .anyRequest().permitAll()
+                        .anyRequest().permitAll() // Mantém tudo liberado para sua lógica customizada
                 );
 
         return http.build();
+    }
+
+    // --- ADICIONE APENAS ISSO AQUI EMBAIXO ---
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
