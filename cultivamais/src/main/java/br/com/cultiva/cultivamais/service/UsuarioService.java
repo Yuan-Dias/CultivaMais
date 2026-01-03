@@ -5,9 +5,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder; // <--- Importante
+import org.springframework.dao.DataIntegrityViolationException; // IMPORTANTE: Para tratar e-mail duplicado
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // <--- Recomendado para DB
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.cultiva.cultivamais.exception.ResourceNotFoundException;
 import br.com.cultiva.cultivamais.model.LogSistema;
@@ -26,32 +27,61 @@ public class UsuarioService {
     private LogRepository logRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // <--- Injeção do Bean que criamos no SecurityConfig
+    private PasswordEncoder passwordEncoder;
+
+    // Injeção de Notificações
+    @Autowired
+    private NotificacaoService notificacaoService;
 
     // Método auxiliar público para o Controller usar na comparação
     public Usuario buscarPorId(Long id) {
         return usuarioRepository.findById(id).orElse(null);
     }
 
-    @Transactional // Garante que tudo salva ou nada salva
+    @Transactional
     @SuppressWarnings("null")
     public Usuario criarUsuario(@NonNull Usuario novoUsuario) {
+        try {
+            // 1. CRIPTOGRAFIA NA CRIAÇÃO
+            String senhaCriptografada = passwordEncoder.encode(novoUsuario.getSenha());
+            novoUsuario.setSenha(senhaCriptografada);
 
-        // 1. CRIPTOGRAFIA NA CRIAÇÃO
-        // Pega a senha "123456", transforma em Hash e salva de volta no objeto
-        String senhaCriptografada = passwordEncoder.encode(novoUsuario.getSenha());
-        novoUsuario.setSenha(senhaCriptografada);
+            if (novoUsuario.getAtivo() == null) {
+                novoUsuario.setAtivo(true);
+            }
 
-        if(novoUsuario.getAtivo() == null) {
-            novoUsuario.setAtivo(true);
+            // Tenta salvar o usuário (Aqui que dava o erro 500 se o email fosse repetido)
+            Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
+
+            // Log de criação
+            logRepository.save(new LogSistema("Sistema", "Criou novo usuário: " + usuarioSalvo.getNomeUsuario()));
+
+            // NOTIFICAÇÕES (Em bloco try separado para não falhar o cadastro se a notificação der erro)
+            try {
+                // HIERARQUIA 1: O usuário recebe boas-vindas
+                notificacaoService.criarNotificacao(
+                        usuarioSalvo.getIdUsuario(),
+                        "Bem-vindo ao Cultiva+!",
+                        "Seu perfil de " + usuarioSalvo.getFuncao() + " foi ativado com sucesso.",
+                        "sucesso"
+                );
+
+                // HIERARQUIA 2: Admins são avisados do novo cadastro (Monitoramento)
+                notificarAdministradores(
+                        "Novo Cadastro no Sistema",
+                        "O usuário " + usuarioSalvo.getNomeUsuario() + " (" + usuarioSalvo.getFuncao() + ") acabou de se registrar.",
+                        "info"
+                );
+            } catch (Exception e) {
+                System.err.println("Erro ao enviar notificação de boas-vindas (ignorado): " + e.getMessage());
+            }
+
+            return usuarioSalvo;
+
+        } catch (DataIntegrityViolationException e) {
+            // CORREÇÃO DO ERRO 500: Lança uma mensagem amigável para o Front-end
+            throw new RuntimeException("Erro: O e-mail informado já está cadastrado no sistema.");
         }
-
-        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
-
-        // Log de criação
-        logRepository.save(new LogSistema("Sistema", "Criou novo usuário: " + usuarioSalvo.getNomeUsuario()));
-
-        return usuarioSalvo;
     }
 
     public List<Usuario> listarTodos() {
@@ -63,6 +93,7 @@ public class UsuarioService {
 
         if (usuarioExistente.isPresent()) {
             Usuario usuario = usuarioExistente.get();
+            boolean senhaAlterada = false;
 
             if (dadosAtualizados.getNomeUsuario() != null && !dadosAtualizados.getNomeUsuario().isEmpty()) {
                 usuario.setNomeUsuario(dadosAtualizados.getNomeUsuario());
@@ -78,14 +109,29 @@ public class UsuarioService {
             }
 
             // 2. CRIPTOGRAFIA NA EDIÇÃO
-            // Se o usuário mandou uma senha nova, temos que criptografar ela antes de salvar
             if (dadosAtualizados.getSenha() != null && !dadosAtualizados.getSenha().isEmpty()) {
                 String novaSenhaHash = passwordEncoder.encode(dadosAtualizados.getSenha());
                 usuario.setSenha(novaSenhaHash);
+                senhaAlterada = true;
             }
 
-            // O Log foi removido daqui pois está sendo tratado no Controller
-            return usuarioRepository.save(usuario);
+            Usuario salvo = usuarioRepository.save(usuario);
+
+            // Se a senha foi trocada numa edição de perfil, avisa o usuário (segurança)
+            if (senhaAlterada) {
+                try {
+                    notificacaoService.criarNotificacao(
+                            salvo.getIdUsuario(),
+                            "Senha Atualizada",
+                            "Sua senha foi alterada através da edição de perfil.",
+                            "alerta"
+                    );
+                } catch (Exception e) {
+                    System.err.println("Erro notificação senha: " + e.getMessage());
+                }
+            }
+
+            return salvo;
 
         } else {
             throw new ResourceNotFoundException("Usuário não encontrado com ID: " + id);
@@ -106,7 +152,6 @@ public class UsuarioService {
 
         if (usuario != null) {
             // 3. VERIFICAÇÃO DE HASH
-            // Não usamos mais .equals(). Usamos .matches(senhaDigitada, hashDoBanco)
             if (passwordEncoder.matches(senhaPlana, usuario.getSenha())) {
 
                 if (Boolean.TRUE.equals(usuario.getAtivo())) {
@@ -147,9 +192,44 @@ public class UsuarioService {
                 usuario.setCodigoRecuperacao(null);
                 usuarioRepository.save(usuario);
                 logRepository.save(new LogSistema(email, "Redefiniu a senha com sucesso"));
+
+                try {
+                    // NOTIFICAÇÃO 1: Usuário recebe aviso de segurança
+                    notificacaoService.criarNotificacao(
+                            usuario.getIdUsuario(),
+                            "Senha Alterada",
+                            "Sua senha foi redefinida. Se não foi você, contate o suporte.",
+                            "alerta"
+                    );
+
+                    // NOTIFICAÇÃO 2: Admins recebem alerta de auditoria (Hierarquia)
+                    notificarAdministradores(
+                            "Segurança: Redefinição de Senha",
+                            "O usuário " + usuario.getNomeUsuario() + " (" + email + ") redefiniu a senha via código.",
+                            "info"
+                    );
+                } catch (Exception e) {
+                    System.err.println("Erro notificação recuperação: " + e.getMessage());
+                }
+
                 return true;
             }
         }
         return false;
+    }
+
+    // --- MÉTODO PRIVADO PARA HIERARQUIA DE ADM ---
+    private void notificarAdministradores(String titulo, String mensagem, String tipo) {
+        // Busca todos e filtra quem tem permissão de Admin
+        List<Usuario> todos = usuarioRepository.findAll();
+        for (Usuario u : todos) {
+            // Verifica se a função não é nula antes de chamar o .name()
+            if (u.getFuncao() != null) {
+                String funcao = u.getFuncao().name().toUpperCase();
+                if (funcao.contains("ADMIN") || funcao.contains("EMPRESA")) {
+                    notificacaoService.criarNotificacao(u.getIdUsuario(), titulo, mensagem, tipo);
+                }
+            }
+        }
     }
 }

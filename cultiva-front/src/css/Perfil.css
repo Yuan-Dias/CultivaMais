@@ -1,0 +1,304 @@
+/* Perfil.css */
+
+.perfil-container {
+    padding: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    color: #334155;
+}
+
+/* Header */
+.perfil-header {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.avatar-circle {
+    width: 64px;
+    height: 64px;
+    background-color: #dcfce7;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #bbf7d0;
+}
+
+.user-info-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #0f172a;
+}
+
+.role-badge {
+    display: inline-block;
+    margin-top: 4px;
+    background-color: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+/* Mensagens */
+.mensagem-box {
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+}
+
+.mensagem-box.sucesso {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.mensagem-box.erro {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Grid Layout */
+.perfil-grid {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+/* Menu Lateral */
+.perfil-sidebar {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    border-left: 4px solid transparent;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.menu-btn:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+.menu-btn.ativo {
+    background-color: #f0fdf4;
+    color: #166534;
+    border-left-color: #166534;
+    font-weight: 600;
+}
+
+/* Conteúdo Forms */
+.perfil-content {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    min-height: 400px;
+}
+
+.perfil-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+}
+
+.desc-text {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* 1. Regra geral para posicionar verticalmente qualquer ícone dentro do input */
+.input-icon svg {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Centraliza perfeitamente na altura */
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+/* 2. Regra específica para o ícone da ESQUERDA (Escudo, User, Mail, etc) */
+/* Aplica-se apenas ao primeiro SVG encontrado dentro da div */
+.input-icon svg:first-of-type {
+    left: 12px;
+}
+
+/* 3. Regra específica para o ícone da DIREITA (Cadeado) */
+.lock-icon {
+    right: 12px !important; /* Força ficar na direita */
+    left: auto !important;  /* Garante que não fique na esquerda */
+}
+
+.input-icon input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.input-icon input:focus {
+    outline: none;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.form-group.disabled .input-icon input {
+    background-color: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.form-footer {
+    margin-top: 32px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Botões */
+.btn-primary {
+    background-color: #166534;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover {
+    background-color: #14532d;
+}
+
+.btn-warning {
+    background-color: #ca8a04;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-warning:hover {
+    background-color: #a16207;
+}
+
+/* Empty State */
+.center-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.empty-state p {
+    max-width: 300px;
+    margin-top: 16px;
+}
+
+/* Animação */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .perfil-grid {
+        grid-template-columns: 1fr;
+    }
+    .perfil-sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+    .menu-btn {
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        justify-content: center;
+    }
+    .menu-btn.ativo {
+        border-left: none;
+        border-bottom-color: #166534;
+    }
+}

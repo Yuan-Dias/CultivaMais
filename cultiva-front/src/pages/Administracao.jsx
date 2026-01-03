@@ -61,85 +61,53 @@ const Administracao = () => {
         }
     };
 
-    // --- BUSCAR LOGS (COM LIMPEZA REFINADA) ---
+    // --- BUSCAR LOGS (COM TRATAMENTO DE ERRO DE FUNÇÃO) ---
     const fetchLogs = async () => {
         setLoadingLogs(true);
         try {
             let dadosLogs = [];
-            if (userService.listarLogs) {
+
+            // Verificação de segurança para o erro "is not a function"
+            if (userService && typeof userService.listarLogs === 'function') {
                 const rawLogs = await userService.listarLogs();
                 dadosLogs = rawLogs.map(log => ({
                     id: log.id || Math.random(),
-                    dataHora: log.dataHora || log.data || new Date().toISOString(),
-                    usuarioIdentificador: log.usuario || log.nomeUsuario || log.username,
+                    dataHora: log.dataHora || new Date().toISOString(),
+                    usuarioIdentificador: log.usuario || log.nomeUsuario || log.idUsuario || 'Sistema',
                     acao: log.acao || log.descricao || 'Ação registrada'
                 }));
             } else {
-                // Mock para testes
-                dadosLogs = [
-                    { id: 1, dataHora: new Date().toISOString(), usuarioIdentificador: 'Sistema', acao: 'Gerou código para: yuan@operador' },
-                    { id: 2, dataHora: new Date().toISOString(), usuarioIdentificador: '3', acao: 'Solicitou código de recuperação' }
-                ];
+                console.error("Erro: userService.listarLogs não está definido no seu api.js");
+                alert("O serviço de logs ainda não foi implementado ou mapeado na API.");
+                return;
             }
 
             // Ordenar: Mais recente primeiro
             dadosLogs.sort((a, b) => {
-                const dataA = new Date(Array.isArray(a.dataHora) ? new Date(...a.dataHora) : a.dataHora);
-                const dataB = new Date(Array.isArray(b.dataHora) ? new Date(...b.dataHora) : b.dataHora);
+                const dataA = new Date(Array.isArray(a.dataHora) ? new Date(a.dataHora[0], a.dataHora[1]-1, a.dataHora[2], a.dataHora[3]||0, a.dataHora[4]||0) : a.dataHora);
+                const dataB = new Date(Array.isArray(b.dataHora) ? new Date(b.dataHora[0], b.dataHora[1]-1, b.dataHora[2], b.dataHora[3]||0, b.dataHora[4]||0) : b.dataHora);
                 return dataB - dataA;
             });
 
-            // --- FILTRO DE LIMPEZA ---
-            const logsLimpos = dadosLogs.filter((log, index, self) => {
+            // Limpeza básica (Apenas ruídos reais de sistema, sem ocultar ações de usuários)
+            const logsLimpos = dadosLogs.filter((log) => {
                 const acaoLower = log.acao.toLowerCase();
-                const usuarioLower = String(log.usuarioIdentificador).toLowerCase();
-
-                // 1. REMOVER AÇÕES TÉCNICAS DO SISTEMA (MAS MANTER BLOQUEIOS/STATUS)
-                if (usuarioLower === 'sistema' || usuarioLower === 'system') {
-                    // Se a ação for especificamente sobre status, permitimos passar
-                    if (acaoLower.includes('bloqueou') || acaoLower.includes('desbloqueou') || acaoLower.includes('status')) {
-                        return true;
-                    }
-
-                    const acoesTecnicasIgnorar = [
-                        'processou',
-                        'gerou código',
-                        'gerou codigo',
-                        'envio de email',
-                        'tarefa agendada'
-                    ];
-
-                    // Se for apenas "Atualizou" genérico sem contexto de usuário alvo, pode ser ruído,
-                    // mas se tiver ID ou Nome, é melhor manter para auditoria.
-                    if (acoesTecnicasIgnorar.some(termo => acaoLower.includes(termo))) {
-                        return false;
-                    }
-                }
-
-                // 2. REMOVER DUPLICATAS DE LOGIN
-                if (index > 0) {
-                    const logAnterior = self[index - 1];
-                    if (log.usuarioIdentificador === logAnterior.usuarioIdentificador &&
-                        acaoLower.includes('login') && logAnterior.acao.toLowerCase().includes('login')) {
-                        return false;
-                    }
-                }
-
-                return true;
+                const ruidosIgnorar = ['keep-alive', 'heartbeat', 'polling'];
+                return !ruidosIgnorar.some(r => acaoLower.includes(r));
             });
 
             setLogs(logsLimpos);
 
-            // Expandir data de hoje
+            // Expandir a primeira data automaticamente
             if (logsLimpos.length > 0) {
-                const hoje = formatarDataSimples(logsLimpos[0].dataHora);
-                setDatasExpandidas({ [hoje]: true });
+                const primeiraData = formatarDataSimples(logsLimpos[0].dataHora);
+                setDatasExpandidas({ [primeiraData]: true });
             }
 
             setModalLogsOpen(true);
         } catch (error) {
             console.error("Erro ao buscar logs:", error);
-            alert("Não foi possível carregar o histórico.");
+            alert("Erro ao carregar o histórico de logs.");
         } finally {
             setLoadingLogs(false);
         }
@@ -179,7 +147,7 @@ const Administracao = () => {
         if (!identificador) return "Usuário";
         const identStr = String(identificador).toLowerCase();
 
-        if (identStr === 'admin') return 'Administrador';
+        if (identStr === 'admin' || identStr === 'sistema') return 'Sistema/Admin';
 
         const usuarioEncontrado = usuarios.find(u =>
             String(u.id) === identStr ||
@@ -191,7 +159,6 @@ const Administracao = () => {
     };
 
     const formatarMensagemLog = (acao) => {
-        // Remove "usuário" duplicado e substitui ID por nome
         const regexId = /(?:usuário\s+)?(?:ID:|id)\s*(\d+)/i;
         const match = acao.match(regexId);
         let acaoFormatada = acao;
@@ -200,8 +167,6 @@ const Administracao = () => {
             const idAlvo = parseInt(match[1]);
             const usuarioAlvo = usuarios.find(u => u.id === idAlvo);
             if (usuarioAlvo) {
-                // Se a mensagem original for genérica "Atualizou usuário ID:...", podemos tentar inferir
-                // mas é mais seguro apenas colocar o nome.
                 acaoFormatada = acao.replace(match[0], `"${usuarioAlvo.nome}"`);
             }
         }
@@ -210,7 +175,7 @@ const Administracao = () => {
         return acaoFormatada;
     };
 
-    // --- AGRUPAMENTO ---
+    // --- AGRUPAMENTO (REVISADO) ---
     const logsAgrupados = useMemo(() => {
         return logs.filter(log => {
             let dataLog;
@@ -221,21 +186,14 @@ const Administracao = () => {
             }
             dataLog.setHours(0,0,0,0);
 
-            if (filtroDataInicio) {
-                const dInicio = new Date(filtroDataInicio);
-                dInicio.setHours(0,0,0,0);
-                dInicio.setDate(dInicio.getDate() + 1); // Ajuste de fuso
-                if (dataLog < new Date(filtroDataInicio)) return false;
-            }
-            if (filtroDataFim) {
-                const dFim = new Date(filtroDataFim);
-                if (dataLog > dFim) return false;
-            }
+            if (filtroDataInicio && dataLog < new Date(filtroDataInicio + "T00:00:00")) return false;
+            if (filtroDataFim && dataLog > new Date(filtroDataFim + "T23:59:59")) return false;
 
             const atorNome = resolverNomeAtor(log.usuarioIdentificador);
-            const matchUser = String(atorNome).toLowerCase().includes(filtroLogUsuario.toLowerCase());
-
             const acaoFormatada = formatarMensagemLog(log.acao);
+
+            const matchUser = String(atorNome).toLowerCase().includes(filtroLogUsuario.toLowerCase()) ||
+                String(log.usuarioIdentificador).toLowerCase().includes(filtroLogUsuario.toLowerCase());
             const matchAcao = acaoFormatada.toLowerCase().includes(filtroLogAcao.toLowerCase());
 
             return matchUser && matchAcao;
@@ -260,16 +218,31 @@ const Administracao = () => {
 
     // --- AÇÕES DO SISTEMA ---
     const handleSalvar = async () => {
-        if (!formData.nome || !formData.email) return alert("Preencha todos os campos.");
+        if (!formData.nome || !formData.email) return alert("Preencha todos os campos obrigatórios.");
+
         try {
-            // Aqui mantemos 'atualizar' normal, pois é uma edição de dados cadastrais
-            usuarioEmEdicao ? await userService.atualizar(usuarioEmEdicao.id, formData) : await userService.criar(formData);
+            const usuarioParaSalvar = {
+                nomeUsuario: formData.nome,
+                email: formData.email,
+                funcao: formData.tipo,
+                ativo: true
+            };
+
+            if (usuarioEmEdicao) {
+                await userService.atualizar(usuarioEmEdicao.id, usuarioParaSalvar);
+            } else {
+                usuarioParaSalvar.senha = "123456";
+                await userService.criar(usuarioParaSalvar);
+                alert(`Usuário criado com sucesso! A senha padrão é: CultivaMais@2026`);
+            }
+
             await fetchUsuarios();
             fecharModal();
-        } catch (error) { alert("Erro ao salvar: " + error.message); }
+        } catch (error) {
+            alert("Erro ao salvar: " + (error.response?.data?.message || error.message));
+        }
     };
 
-    // CORREÇÃO: Função toggleStatus aprimorada
     const toggleStatus = async (user) => {
         const usuarioLogado = authService.obterUsuarioLogado();
         if ((usuarioLogado?.idUsuario || usuarioLogado?.id) === user.id) return alert("Você não pode bloquear a si mesmo.");
@@ -278,15 +251,11 @@ const Administracao = () => {
         const acaoTexto = novoStatus ? 'Desbloquear' : 'Bloquear';
 
         try {
-            // Enviamos parâmetros extras para tentar forçar o log correto no backend.
-            // Se o backend suportar 'acao' ou 'contexto', ele registrará corretamente.
             await userService.atualizar(user.id, {
                 ativo: novoStatus,
-                // Flag de metadados para o backend diferenciar 'Edição' de 'Bloqueio'
                 contexto: 'alteracao_status',
                 acaoLog: acaoTexto
             });
-
             fetchUsuarios();
         } catch (error) {
             alert(`Erro ao ${acaoTexto.toLowerCase()} usuário.`);
@@ -413,7 +382,7 @@ const Administracao = () => {
                             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
                                 <div style={{flex: 1, minWidth: '180px'}}>
                                     <label style={{fontSize: '0.75rem', color:'#64748b', fontWeight:'700', textTransform: 'uppercase'}}>Quem (Ator)</label>
-                                    <div style={{position:'relative', display: 'flex', alignItems:'center'}}><Search size={16} style={{position:'absolute', left: 10, color:'#94a3b8'}} /><input type="text" className="form-input" style={{paddingLeft: '32px', marginTop: '4px'}} placeholder="Nome..." value={filtroLogUsuario} onChange={(e) => setFiltroLogUsuario(e.target.value)} /></div>
+                                    <div style={{position:'relative', display: 'flex', alignItems:'center'}}><Search size={16} style={{position:'absolute', left: 10, color:'#94a3b8'}} /><input type="text" className="form-input" style={{paddingLeft: '32px', marginTop: '4px'}} placeholder="Nome ou ID..." value={filtroLogUsuario} onChange={(e) => setFiltroLogUsuario(e.target.value)} /></div>
                                 </div>
                                 <div style={{flex: 1.5, minWidth: '200px'}}>
                                     <label style={{fontSize: '0.75rem', color:'#64748b', fontWeight:'700', textTransform: 'uppercase'}}>O que (Ação/Alvo)</label>
@@ -444,10 +413,10 @@ const Administracao = () => {
                                                         <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
                                                             <div style={{ width: '60px', fontSize: '0.8rem', fontFamily: 'monospace', color: '#64748b' }}>{formatarHora(log.dataHora)}</div>
                                                             <div style={{ width: '160px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: atorNome === 'Usuário' ? '#f1f5f9' : '#dcfce7', color: atorNome === 'Usuário' ? '#94a3b8' : '#166534', fontSize: '0.7rem', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>{atorNome.substring(0,2).toUpperCase()}</div>
+                                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: atorNome.includes('Sistema') ? '#f1f5f9' : '#dcfce7', color: atorNome.includes('Sistema') ? '#94a3b8' : '#166534', fontSize: '0.7rem', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>{atorNome.substring(0,2).toUpperCase()}</div>
                                                                 <span style={{ fontSize: '0.9rem', fontWeight: '500', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atorNome}>{atorNome}</span>
                                                             </div>
-                                                            <div style={{ flex: 1, fontSize: '0.9rem', color: '#475569', paddingLeft: '12px', borderLeft: '1px solid #f1f5f9' }}>{formatarMensagemLog(log.acao, atorNome)}</div>
+                                                            <div style={{ flex: 1, fontSize: '0.9rem', color: '#475569', paddingLeft: '12px', borderLeft: '1px solid #f1f5f9' }}>{formatarMensagemLog(log.acao)}</div>
                                                         </div>
                                                     );
                                                 })}

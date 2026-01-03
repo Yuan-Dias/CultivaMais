@@ -7,6 +7,7 @@ public enum TipoSolo {
     SILTOSO,
     HUMOSO,          // Ou HUMIFERO/ORGANICO
     CALCARIO,
+    FRANCO,
 
     // --- Classificação Técnica (Embrapa) ---
     LATOSSOLO,

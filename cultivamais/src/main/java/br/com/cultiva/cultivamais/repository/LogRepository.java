@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface LogRepository extends JpaRepository<LogSistema, Long> {
-    // Este nome precisa ser EXATO, senão o Spring lança erro 500
     List<LogSistema> findAllByOrderByDataHoraDesc();
 }

@@ -1,12 +1,21 @@
 package br.com.cultiva.cultivamais.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import br.com.cultiva.cultivamais.model.*;
-import br.com.cultiva.cultivamais.service.EventoService;
-import br.com.cultiva.cultivamais.service.LogService; // Importar
 import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.cultiva.cultivamais.model.DoencaPraga;
+import br.com.cultiva.cultivamais.model.Irrigacao;
+import br.com.cultiva.cultivamais.model.MetodoIrrigacao;
+import br.com.cultiva.cultivamais.model.NivelAfetacao;
+import br.com.cultiva.cultivamais.service.EventoService;
 
 @RestController
 @RequestMapping("/api/eventos")
@@ -15,36 +24,42 @@ public class EventoController {
     @Autowired
     private EventoService eventoService;
 
-    @Autowired
-    private LogService logService; // Injetar
-
-    @PostMapping("/irrigacao")
+    // --- REGISTRAR IRRIGAÇÃO ---
+    @PostMapping("/irrigacao/{idCultivo}")
     public ResponseEntity<Irrigacao> registrarIrrigacao(
-            @RequestParam Long cultivoId,
-            @RequestParam double volume,
+            @PathVariable Long idCultivo,
+            @RequestParam Long idUsuario,
+            @RequestParam double volumeAgua,
             @RequestParam MetodoIrrigacao metodo,
-            @RequestParam(required = false) String obs,
-            @RequestParam LocalDateTime dataHora) {
+            @RequestParam(required = false) String observacao,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataHora) {
 
-        Irrigacao irrigacaoSalva = eventoService.registrarIrrigacao(cultivoId, volume, metodo, obs, dataHora);
+        // Se a data não for informada, usa o momento atual
+        if (dataHora == null) {
+            dataHora = LocalDateTime.now();
+        }
 
-        logService.registrarLog("Operador", "Registrou irrigação no cultivo " + cultivoId + ". Volume: " + volume);
+        Irrigacao irrigacao = eventoService.registrarIrrigacao(idUsuario, idCultivo, volumeAgua, metodo, observacao, dataHora);
 
-        return ResponseEntity.ok(irrigacaoSalva);
+        return ResponseEntity.ok(irrigacao);
     }
 
-    @PostMapping("/praga")
-    public ResponseEntity<DoencaPraga> registrarDoencaPraga(
-            @RequestParam Long cultivoId,
-            @RequestParam String nome,
+    // --- REGISTRAR DOENÇA/PRAGA ---
+    @PostMapping("/praga/{idCultivo}")
+    public ResponseEntity<DoencaPraga> registrarPraga(
+            @PathVariable Long idCultivo,
+            @RequestParam Long idUsuario,
+            @RequestParam String nomePraga,
             @RequestParam NivelAfetacao nivel,
-            @RequestParam(required = false) String obs,
-            @RequestParam LocalDateTime dataHora) {
+            @RequestParam(required = false) String observacao,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataHora) {
 
-        DoencaPraga doencaSalva = eventoService.registrarDoencaPraga(cultivoId, nome, nivel, obs, dataHora);
+        if (dataHora == null) {
+            dataHora = LocalDateTime.now();
+        }
 
-        logService.registrarLog("Agrônomo", "Reportou praga/doença: " + nome + " (Nível: " + nivel + ")");
+        DoencaPraga praga = eventoService.registrarDoencaPraga(idUsuario, idCultivo, nomePraga, nivel, observacao, dataHora);
 
-        return ResponseEntity.ok(doencaSalva);
+        return ResponseEntity.ok(praga);
     }
 }

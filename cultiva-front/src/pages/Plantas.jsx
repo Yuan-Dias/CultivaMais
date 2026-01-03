@@ -5,8 +5,12 @@ import {
     Leaf, Cherry, Bean, Wheat, X, Microscope,
     Droplets, Sun, Flower
 } from 'lucide-react';
+import {authService, getHeaders} from "../services/api.js";
+import { useNotify } from "../context/NotificationContext"; // Importação do sistema de notificações
 
 const Plantas = () => {
+    const notify = useNotify(); // Inicialização do hook de notificações
+
     // --- ESTADOS ---
     const [plantas, setPlantas] = useState([]);
     const [modalAberto, setModalAberto] = useState(false);
@@ -19,14 +23,14 @@ const Plantas = () => {
         tipoPlanta: 'HORTALICA',
         cicloMedioDias: '',
         solosRecomendados: [],
-        necessidadeAgua: 'MODERADA',
-        necessidadeLuz: 'MEDIA'
+        aguaRecomendada: 'MEDIA', // Sincronizado com o novo Enum Java
+        luzRecomendada: 'MEIA_SOMBRA'
     });
 
-    // --- LISTA DE SOLOS (CORRIGIDA: REMOVIDO "FRANCO") ---
+    // --- LISTA DE SOLOS ---
     const CATEGORIAS_SOLO = {
         "Textura e Composição": [
-            "ARGILOSO", "ARENOSO", "SILTOSO", "HUMOSO", "CALCARIO"
+            "ARGILOSO", "ARENOSO", "SILTOSO", "HUMOSO", "CALCARIO", "FRANCO"
         ],
         "Classificação Técnica (Embrapa)": [
             "LATOSSOLO", "ARGISSOLO", "CHERNOSSOLO", "NEOSSOLO", "CAMBISSOLO", "GLEISSOLO", "NITOSSOLO"
@@ -64,8 +68,8 @@ const Plantas = () => {
             .then(dados => setPlantas(dados))
             .catch(err => {
                 console.error("Erro ao buscar plantas:", err);
-                // Evita tela branca se o backend estiver fora do ar ou vazio
                 setPlantas([]);
+                notify("Erro ao conectar com o catálogo de plantas.", "error");
             });
     };
 
@@ -83,8 +87,8 @@ const Plantas = () => {
                 tipoPlanta: planta.tipoPlanta,
                 cicloMedioDias: planta.cicloMedioDias,
                 solosRecomendados: planta.solosRecomendados || [],
-                necessidadeAgua: planta.necessidadeAgua || 'MODERADA',
-                necessidadeLuz: planta.necessidadeLuz || 'MEDIA'
+                aguaRecomendada: planta.aguaRecomendada || 'MEDIA',
+                luzRecomendada: planta.luzRecomendada || 'MEIA_SOMBRA'
             });
         } else {
             setEditandoId(null);
@@ -94,8 +98,8 @@ const Plantas = () => {
                 tipoPlanta: 'HORTALICA',
                 cicloMedioDias: '',
                 solosRecomendados: [],
-                necessidadeAgua: 'MODERADA',
-                necessidadeLuz: 'MEDIA'
+                aguaRecomendada: 'MEDIA',
+                luzRecomendada: 'MEIA_SOMBRA'
             });
         }
         setModalAberto(true);
@@ -117,57 +121,79 @@ const Plantas = () => {
         });
     };
 
-    // --- 3. SALVAR ---
-    const salvarPlanta = (e) => {
-        e.preventDefault();
+    const excluirPlanta = (id, nome) => {
+        if(window.confirm(`Deseja excluir a planta ${nome}?`)) {
+            fetch(`http://localhost:8090/api/plantas/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            })
+                .then(res => {
+                    if(res.ok) {
+                        notify(`Planta ${nome} removida com sucesso.`, "info");
+                        carregarPlantas();
+                    } else {
+                        notify("Não foi possível excluir a planta.", "error");
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro ao excluir:", err);
+                    notify("Erro de conexão ao tentar excluir.", "error");
+                });
+        }
+    };
+
+    // --- 3. SALVAR (SINCRONIZADO COM PLANTA.JAVA) ---
+    const salvarPlanta = async (e) => {
+        if (e) e.preventDefault();
 
         if (!novaPlanta.nomePopular || !novaPlanta.cicloMedioDias) {
-            alert("Preencha o Nome e o Ciclo.");
+            notify("Preencha o Nome e o Ciclo antes de salvar.", "error");
             return;
         }
 
-        const url = editandoId
-            ? `http://localhost:8090/api/plantas/${editandoId}`
-            : 'http://localhost:8090/api/plantas';
-        const metodo = editandoId ? 'PUT' : 'POST';
+        try {
+            const usuarioLogado = authService.obterUsuarioLogado();
+            const idUsuario = usuarioLogado?.idUsuario || usuarioLogado?.id;
 
-        const payload = {
-            ...novaPlanta,
-            cicloMedioDias: Number(novaPlanta.cicloMedioDias),
-            solosRecomendados: novaPlanta.solosRecomendados || []
-        };
+            if (!idUsuario) {
+                notify("Sessão expirada. Por favor, faça login novamente.", "error");
+                return;
+            }
 
-        fetch(url, {
-            method: metodo,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).then(res => {
-            if (res.ok) {
+            const url = editandoId
+                ? `http://localhost:8090/api/plantas/${editandoId}`
+                : `http://localhost:8090/api/plantas/usuario/${idUsuario}`;
+
+            const metodo = editandoId ? 'PUT' : 'POST';
+
+            // Payload rigorosamente ajustado para o Model Planta
+            const payload = {
+                nomePopular: novaPlanta.nomePopular,
+                nomeCientifico: novaPlanta.nomeCientifico || "",
+                tipoPlanta: novaPlanta.tipoPlanta || "HORTALICA",
+                cicloMedioDias: Number(novaPlanta.cicloMedioDias),
+                solosRecomendados: Array.isArray(novaPlanta.solosRecomendados) ? novaPlanta.solosRecomendados : [],
+                luzRecomendada: novaPlanta.luzRecomendada,
+                aguaRecomendada: novaPlanta.aguaRecomendada // Enviando para o novo campo do Java
+            };
+
+            const response = await fetch(url, {
+                method: metodo,
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                notify(editandoId ? "Planta atualizada com sucesso!" : "Planta cadastrada com sucesso!", "success");
                 carregarPlantas();
                 fecharModal();
             } else {
-                res.text().then(text => {
-                    console.error("Erro Backend:", text);
-                    try {
-                        const erro = JSON.parse(text);
-                        alert(`Erro ao salvar: ${erro.message || 'Dados inválidos'}`);
-                    } catch {
-                        alert('Erro ao salvar. Verifique se o Backend foi reiniciado.');
-                    }
-                });
+                const errorText = await response.text();
+                notify(`Erro ao salvar: ${errorText}`, "error");
             }
-        }).catch(err => alert("Erro de conexão. O servidor Java está rodando?"));
-    };
-
-    // --- 4. EXCLUIR ---
-    const excluirPlanta = (id, nome) => {
-        if (confirm(`Tem a certeza que deseja remover a planta "${nome}"?`)) {
-            fetch(`http://localhost:8090/api/plantas/${id}`, {
-                method: 'DELETE'
-            }).then(res => {
-                if (res.ok) carregarPlantas();
-                else alert('Erro ao remover.');
-            });
+        } catch (err) {
+            console.error("Erro de Conexão:", err);
+            notify("Erro ao conectar ao servidor.", "error");
         }
     };
 
@@ -240,14 +266,14 @@ const Plantas = () => {
                                     </div>
 
                                     <div style={{display: 'flex', gap: '8px', fontSize: '0.8rem', color: '#475569', flexWrap: 'wrap', marginTop: '12px'}}>
-                                        {planta.necessidadeAgua && (
+                                        {planta.luzRecomendada && (
                                             <span style={{display: 'flex', alignItems: 'center', gap: 4, background: '#f1f5f9', padding: '2px 8px', borderRadius: 4}}>
-                                                <Droplets size={12} className="text-blue-500"/> {formatarTexto(planta.necessidadeAgua)}
+                                                <Sun size={12} className="text-orange-500"/> {formatarTexto(planta.luzRecomendada)}
                                             </span>
                                         )}
-                                        {planta.necessidadeLuz && (
+                                        {planta.aguaRecomendada && (
                                             <span style={{display: 'flex', alignItems: 'center', gap: 4, background: '#f1f5f9', padding: '2px 8px', borderRadius: 4}}>
-                                                <Sun size={12} className="text-orange-500"/> {formatarTexto(planta.necessidadeLuz)}
+                                                <Droplets size={12} className="text-blue-500"/> {formatarTexto(planta.aguaRecomendada)}
                                             </span>
                                         )}
                                     </div>
@@ -293,7 +319,6 @@ const Plantas = () => {
                         </div>
 
                         <form onSubmit={salvarPlanta}>
-                            {/* LINHA 1: NOME E CIENTIFICO */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div className="form-group">
                                     <label className="form-label">Nome Popular</label>
@@ -320,7 +345,6 @@ const Plantas = () => {
                                 </div>
                             </div>
 
-                            {/* LINHA 2: CICLO E TIPO */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div className="form-group">
                                     <label className="form-label">Ciclo Médio (dias)</label>
@@ -354,35 +378,33 @@ const Plantas = () => {
                                 </div>
                             </div>
 
-                            {/* LINHA 3: AGUA E LUZ */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div className="form-group">
-                                    <label className="form-label"><Droplets size={14} style={{marginRight: 4}}/> Água</label>
+                                    <label className="form-label"><Droplets size={14} style={{marginRight: 4}}/> Necessidade de Água</label>
                                     <select
                                         className="form-select"
-                                        value={novaPlanta.necessidadeAgua}
-                                        onChange={e => setNovaPlanta({...novaPlanta, necessidadeAgua: e.target.value})}
+                                        value={novaPlanta.aguaRecomendada}
+                                        onChange={e => setNovaPlanta({...novaPlanta, aguaRecomendada: e.target.value})}
                                     >
                                         <option value="BAIXA">Baixa</option>
-                                        <option value="MODERADA">Moderada</option>
+                                        <option value="MEDIA">Media</option>
                                         <option value="ALTA">Alta</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label"><Sun size={14} style={{marginRight: 4}}/> Luz</label>
+                                    <label className="form-label"><Sun size={14} style={{marginRight: 4}}/> Luz Recomendada</label>
                                     <select
                                         className="form-select"
-                                        value={novaPlanta.necessidadeLuz}
-                                        onChange={e => setNovaPlanta({...novaPlanta, necessidadeLuz: e.target.value})}
+                                        value={novaPlanta.luzRecomendada}
+                                        onChange={e => setNovaPlanta({...novaPlanta, luzRecomendada: e.target.value})}
                                     >
-                                        <option value="BAIXA">Sombra</option>
-                                        <option value="MEDIA">Meia Sombra</option>
-                                        <option value="ALTA">Sol Pleno</option>
+                                        <option value="SOMBRA">Sombra</option>
+                                        <option value="MEIA_SOMBRA">Meia Sombra</option>
+                                        <option value="PLENO_SOL">Pleno Sol</option>
                                     </select>
                                 </div>
                             </div>
 
-                            {/* SELEÇÃO DE SOLOS AGRUPADA */}
                             <div className="form-group">
                                 <label className="form-label" style={{marginBottom: '10px', display:'block'}}>Solos Recomendados</label>
 

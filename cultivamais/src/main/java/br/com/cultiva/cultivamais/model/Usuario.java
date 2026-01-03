@@ -25,8 +25,6 @@ public class Usuario {
     private FuncaoUsuario funcao;
 
     // --- RELACIONAMENTOS ---
-    // O @JsonIgnore aqui é FUNDAMENTAL. Não remova.
-
     @OneToMany(mappedBy = "responsavel", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Tarefa> tarefasAtribuidas;
@@ -34,6 +32,10 @@ public class Usuario {
     @OneToMany(mappedBy = "criador")
     @JsonIgnore
     private List<Tarefa> tarefasCriadas;
+
+    @OneToMany(mappedBy = "usuario")
+    @JsonIgnore
+    private List<Notificacao> notificacoes;
 
     // --- CONSTRUTORES ---
     public Usuario(String nome, String email, String senha, FuncaoUsuario funcao) {

@@ -1,9 +1,11 @@
 package br.com.cultiva.cultivamais.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import br.com.cultiva.cultivamais.model.Tarefa;
@@ -23,6 +25,10 @@ public class TarefaService {
     @Autowired
     private LogService logService;
 
+    // Injeção para enviar notificações
+    @Autowired
+    private NotificacaoService notificacaoService;
+
     // --- CRIAR ---
     public Tarefa criarTarefa(Long idCriador, Long idResponsavel, Tarefa novaTarefa) {
         Usuario criador = usuarioRepository.findById(idCriador).orElse(null);
@@ -41,6 +47,16 @@ public class TarefaService {
             logService.registrarLog(criador.getNomeUsuario(),
                     "Criou a tarefa \"" + salva.getTitulo() + "\" para " + salva.getResponsavel().getNomeUsuario());
 
+            // NOTIFICAÇÃO
+            if (responsavel != null) {
+                notificacaoService.criarNotificacao(
+                        responsavel.getIdUsuario(),
+                        "Nova Tarefa Atribuída",
+                        "Você foi designado para: " + salva.getTitulo(),
+                        "info"
+                );
+            }
+
             return salva;
         }
         return null;
@@ -51,16 +67,13 @@ public class TarefaService {
         return tarefaRepository.findAll();
     }
 
-    // --- LISTAR POR USUÁRIO (CORRIGIDO) ---
+    // --- LISTAR POR USUÁRIO (MANTIDA A HIERARQUIA) ---
     public List<Tarefa> listarTarefasPorUsuario(Long idUsuario, String funcao) {
         // Se for ADMIN, EMPRESA ou ADMINISTRADOR, vê tudo.
         if ("ADMIN".equalsIgnoreCase(funcao) || "EMPRESA".equalsIgnoreCase(funcao) || "ADMINISTRADOR".equalsIgnoreCase(funcao)) {
             return tarefaRepository.findAll();
         } else {
-            // --- CORREÇÃO AQUI ---
-            // Antes buscava apenas tarefas onde o usuário era o RESPONSÁVEL.
-            // Agora busca tarefas onde ele é RESPONSÁVEL *OU* onde ele é o CRIADOR.
-            // Passamos o mesmo ID duas vezes para preencher os dois parâmetros da query.
+            // Busca tarefas onde ele é RESPONSÁVEL *OU* onde ele é o CRIADOR.
             return tarefaRepository.findByResponsavel_IdUsuarioOrCriador_IdUsuario(idUsuario, idUsuario);
         }
     }
@@ -92,8 +105,17 @@ public class TarefaService {
             // Reatribuição de responsável
             if (dadosNovos.getResponsavel() != null && dadosNovos.getResponsavel().getIdUsuario() != null) {
                 Usuario novoResponsavel = usuarioRepository.findById(dadosNovos.getResponsavel().getIdUsuario()).orElse(null);
-                if (novoResponsavel != null) {
+
+                // Se mudou o responsável, avisa o novo
+                if (novoResponsavel != null && !novoResponsavel.equals(tarefa.getResponsavel())) {
                     tarefa.setResponsavel(novoResponsavel);
+
+                    notificacaoService.criarNotificacao(
+                            novoResponsavel.getIdUsuario(),
+                            "Tarefa Transferida",
+                            "A tarefa '" + tarefa.getTitulo() + "' foi repassada para você.",
+                            "info"
+                    );
                 }
             }
 
@@ -121,6 +143,17 @@ public class TarefaService {
                 t.setDataConclusao(LocalDateTime.now());
                 t.setObservacaoConclusao(observacao); // Salva o texto
                 logService.registrarLog(quemFez.getNomeUsuario(), "Concluiu a tarefa \"" + t.getTitulo() + "\". Obs: " + observacao);
+
+                // NOTIFICAÇÃO: Se quem fez não foi o criador, avisa o criador (Feedback de trabalho feito)
+                if (!t.getCriador().getIdUsuario().equals(quemFez.getIdUsuario())) {
+                    notificacaoService.criarNotificacao(
+                            t.getCriador().getIdUsuario(),
+                            "Tarefa Concluída",
+                            quemFez.getNomeUsuario() + " finalizou: " + t.getTitulo(),
+                            "sucesso"
+                    );
+                }
+
             } else {
                 // ESTÁ REABRINDO
                 t.setDataConclusao(null);
@@ -147,6 +180,17 @@ public class TarefaService {
                 t.setConcluida(false); // Garante que não conte como concluída
 
                 logService.registrarLog(quemCancelou.getNomeUsuario(), "Cancelou a tarefa \"" + t.getTitulo() + "\"");
+
+                // NOTIFICAÇÃO: Avisa o responsável que a tarefa foi cancelada
+                if (!t.getResponsavel().getIdUsuario().equals(quemCancelou.getIdUsuario())) {
+                    notificacaoService.criarNotificacao(
+                            t.getResponsavel().getIdUsuario(),
+                            "Tarefa Cancelada",
+                            "A tarefa '" + t.getTitulo() + "' foi cancelada pelo gestor.",
+                            "alerta"
+                    );
+                }
+
                 return tarefaRepository.save(t);
             }
         }
@@ -171,5 +215,30 @@ public class TarefaService {
             }
         }
         return false;
+    }
+
+    // --- AUTOMAÇÃO (CRON) ---
+    // Executa todo dia às 08:00 AM para verificar atrasos
+    @Scheduled(cron = "0 0 8 * * *")
+    public void verificarTarefasAtrasadas() {
+        System.out.println(">>> Verificando tarefas atrasadas...");
+
+        List<Tarefa> tarefas = tarefaRepository.findAll();
+        LocalDate hoje = LocalDate.now();
+
+        for (Tarefa t : tarefas) {
+            if (t.isConcluida() || t.isCancelada()) continue;
+
+            if (t.getDataPrazo() != null && t.getDataPrazo().toLocalDate().isBefore(hoje)) {
+
+                // NOTIFICAÇÃO DE COBRANÇA
+                notificacaoService.criarNotificacao(
+                        t.getResponsavel().getIdUsuario(),
+                        "Tarefa Atrasada",
+                        "Atenção: A tarefa '" + t.getTitulo() + "' venceu em " + t.getDataPrazo(),
+                        "erro" // Vermelho
+                );
+            }
+        }
     }
 }

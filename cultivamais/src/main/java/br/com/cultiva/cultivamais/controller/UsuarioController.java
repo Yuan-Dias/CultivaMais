@@ -25,8 +25,19 @@ public class UsuarioController {
     @Autowired
     private LogService logService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> buscarUsuarioPorId(@PathVariable Long id) {
+        Usuario usuario = usuarioService.buscarPorId(id);
+
+        if (usuario != null) {
+            usuario.setSenha(null);
+            return ResponseEntity.ok(usuario);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
     private String getUsuarioLogado() {
-        // Idealmente pegaria do SecurityContextHolder
         return "Yuan Admin";
     }
 
@@ -34,14 +45,14 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<Usuario> criarUsuario(@Valid @RequestBody UsuarioCadastroDTO usuarioDTO) {
 
-        // 1. Converter DTO para Entidade
+        // Converter DTO para Entidade
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNomeUsuario(usuarioDTO.getNomeUsuario());
         novoUsuario.setEmail(usuarioDTO.getEmail());
-        novoUsuario.setSenha(usuarioDTO.getSenha()); // Service vai criptografar
+        novoUsuario.setSenha(usuarioDTO.getSenha());
         novoUsuario.setFuncao(usuarioDTO.getFuncao());
 
-        // 2. Chamar o serviço
+        // Chamar o serviço
         Usuario usuarioSalvo = usuarioService.criarUsuario(novoUsuario);
 
         return ResponseEntity.ok(usuarioSalvo);
@@ -56,7 +67,7 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> atualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioNovosDados) {
 
-        // 1. Buscar o usuário ANTES da atualização
+        // Buscar o usuário ANTES da atualização
         Usuario usuarioAntigo = usuarioService.buscarPorId(id);
 
         if (usuarioAntigo == null) {
@@ -66,13 +77,13 @@ public class UsuarioController {
         // IMPORTANTÍSSIMO: Guardar o estado do boolean ANTES de chamar o service.atualizar
         boolean eraAtivo = Boolean.TRUE.equals(usuarioAntigo.getAtivo());
 
-        // 2. Realizar a atualização no Banco
+        // Realizar a atualização no Banco
         Usuario atualizado = usuarioService.atualizarUsuario(id, usuarioNovosDados);
 
-        // 3. Verificar como ficou o status AGORA
+        // Verificar como ficou o status AGORA
         boolean ficouAtivo = Boolean.TRUE.equals(atualizado.getAtivo());
 
-        // 4. Definir a mensagem do Log
+        // Definir a mensagem do Log
         String acaoLog = "Editou \"" + atualizado.getNomeUsuario() + "\"";
 
         if (eraAtivo && !ficouAtivo) {
@@ -81,7 +92,7 @@ public class UsuarioController {
             acaoLog = "Desbloqueou o usuário \"" + atualizado.getNomeUsuario() + "\"";
         }
 
-        // 5. Salvar o Log
+        // Salvar o Log
         String ator = getUsuarioLogado();
         logService.registrarLog(ator, acaoLog);
 

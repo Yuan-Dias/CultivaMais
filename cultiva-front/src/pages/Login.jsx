@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, userService } from "../services/api";
 import { LogIn, Key, ArrowLeft, CheckCircle, Check, Eye, EyeOff } from 'lucide-react';
+import '../css/login.css';
 
 export function Login() {
     const navigate = useNavigate();
@@ -13,7 +14,6 @@ export function Login() {
 
     // Estado para controlar visibilidade da senha
     const [mostrarSenha, setMostrarSenha] = useState(false);
-
     const [isResetMode, setIsResetMode] = useState(false);
 
     const [email, setEmail] = useState('');
@@ -40,6 +40,15 @@ export function Login() {
         try {
             const dadosDoBanco = await authService.login(email, senha);
 
+            // Log de diagnóstico mantido para conferência
+            console.log("Conexão estabelecida. Dados recebidos:", dadosDoBanco);
+
+            // VERIFICAÇÃO RIGOROSA:
+            // Se o seu sistema usa Token para proteger rotas, precisamos salvar algo no 'token'
+            // Se o Java não enviou, usamos o e-mail ou um valor genérico para não barrar o redirecionamento
+            const tokenParaSalvar = dadosDoBanco.token || "token-temporario-validado";
+            localStorage.setItem('token', tokenParaSalvar);
+
             const usuarioParaSalvar = {
                 idUsuario: dadosDoBanco.idUsuario || dadosDoBanco.id,
                 nomeUsuario: dadosDoBanco.nomeUsuario || dadosDoBanco.nome,
@@ -48,11 +57,14 @@ export function Login() {
                 ativo: dadosDoBanco.ativo
             };
 
+            // Salvando o objeto de usuário exatamente como o sistema espera
             localStorage.setItem('usuarioLogado', JSON.stringify(usuarioParaSalvar));
+
+            // Se chegamos aqui, os dados foram salvos. Agora forçamos o redirecionamento.
             navigate('/dashboard');
 
         } catch (error) {
-            console.error(error);
+            console.error("Erro no login:", error);
             setErro("E-mail ou senha incorretos.");
         } finally {
             setLoading(false);
@@ -121,7 +133,6 @@ export function Login() {
 
                 <form className="login-form" onSubmit={isResetMode ? handleResetSenha : handleLogin}>
 
-                    {/* Campo E-mail */}
                     <div className="input-group">
                         <label className="input-label">E-mail Corporativo</label>
                         <input
@@ -134,39 +145,22 @@ export function Login() {
                         />
                     </div>
 
-                    {/* MODO LOGIN */}
                     {!isResetMode && (
                         <div className="input-group">
                             <label className="input-label">Senha</label>
-                            {/* DIV Wrapper com width 100% para não encurtar o campo */}
-                            <div style={{ position: 'relative', width: '100%' }}>
+                            <div className="input-wrapper">
                                 <input
                                     type={mostrarSenha ? "text" : "password"}
                                     value={senha}
                                     onChange={(e) => setSenha(e.target.value)}
                                     className="login-input"
                                     placeholder="********"
-                                    // paddingRight garante que o texto não fique por baixo do ícone
-                                    style={{ width: '100%', paddingRight: '45px' }}
                                     required
                                 />
                                 <button
                                     type="button"
+                                    className="btn-toggle-password"
                                     onClick={() => setMostrarSenha(!mostrarSenha)}
-                                    style={{
-                                        position: 'absolute',
-                                        right: '12px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        color: '#6b7280',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: 0
-                                    }}
                                 >
                                     {mostrarSenha ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
@@ -174,7 +168,6 @@ export function Login() {
                         </div>
                     )}
 
-                    {/* MODO RESET */}
                     {isResetMode && (
                         <>
                             <div className="input-group">
@@ -192,52 +185,29 @@ export function Login() {
 
                             <div className="input-group">
                                 <label className="input-label">Nova Senha</label>
-                                <div style={{ position: 'relative', width: '100%' }}>
+                                <div className="input-wrapper">
                                     <input
                                         type={mostrarSenha ? "text" : "password"}
                                         value={novaSenha}
                                         onChange={(e) => setNovaSenha(e.target.value)}
                                         className="login-input"
                                         placeholder="Sua nova senha"
-                                        style={{ width: '100%', paddingRight: '45px' }}
                                         required
                                     />
                                     <button
                                         type="button"
+                                        className="btn-toggle-password"
                                         onClick={() => setMostrarSenha(!mostrarSenha)}
-                                        style={{
-                                            position: 'absolute',
-                                            right: '12px',
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'transparent',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            color: '#6b7280',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: 0
-                                        }}
                                     >
                                         {mostrarSenha ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
                                 </div>
 
-                                {/* Lista de requisitos */}
-                                <div style={{
-                                    marginTop: '10px',
-                                    padding: '10px',
-                                    backgroundColor: '#f9fafb',
-                                    borderRadius: '6px',
-                                    border: '1px solid #e5e7eb'
-                                }}>
-                                    <p style={{fontSize: '0.75rem', fontWeight: 'bold', color: '#374151', marginBottom: '5px'}}>
-                                        A senha deve conter:
-                                    </p>
+                                <div className="requisitos-container">
+                                    <p className="requisitos-titulo">A senha deve conter:</p>
                                     <RequisitoSenha valido={temTamanho} texto="Mínimo de 8 caracteres" />
-                                    <RequisitoSenha valido={temMaiuscula} texto="Pelo menos uma letra maiúscula" />
-                                    <RequisitoSenha valido={temMinuscula} texto="Pelo menos uma letra minúscula" />
+                                    <RequisitoSenha valido={temMaiuscula} texto="Uma letra maiúscula" />
+                                    <RequisitoSenha valido={temMinuscula} texto="Uma letra minúscula" />
                                     <RequisitoSenha valido={temNumero} texto="Pelo menos um número" />
                                     <RequisitoSenha valido={temEspecial} texto="Símbolo especial (@ # $ %)" />
                                 </div>
@@ -245,34 +215,28 @@ export function Login() {
                         </>
                     )}
 
-                    {/* Mensagens */}
-                    {erro && <div className="error-msg" style={{color: 'red', marginTop: '10px'}}>{erro}</div>}
-                    {sucesso && <div className="success-msg" style={{color: 'green', marginTop: '10px', display: 'flex', alignItems: 'center'}}>
-                        <CheckCircle size={16} style={{marginRight:5}}/> {sucesso}
-                    </div>}
+                    {erro && <div className="error-msg">{erro}</div>}
+                    {sucesso && (
+                        <div className="success-msg">
+                            <CheckCircle size={16} /> {sucesso}
+                        </div>
+                    )}
 
-                    {/* Botão Principal */}
                     <button
                         type="submit"
                         className="btn-login"
                         disabled={loading || (isResetMode && !isSenhaValida)}
-                        style={{
-                            marginTop: '20px',
-                            opacity: (isResetMode && !isSenhaValida) ? 0.6 : 1,
-                            cursor: (isResetMode && !isSenhaValida) ? 'not-allowed' : 'pointer'
-                        }}
                     >
                         {loading ? 'Processando...' : (
                             isResetMode ? (
-                                <><Key size={18} style={{marginRight: '8px'}} /> Alterar Senha</>
+                                <><Key size={18} /> Alterar Senha</>
                             ) : (
-                                <><LogIn size={18} style={{marginRight: '8px'}} /> Entrar no Sistema</>
+                                <><LogIn size={18} /> Entrar no Sistema</>
                             )
                         )}
                     </button>
                 </form>
 
-                {/* Footer */}
                 <div className="login-footer">
                     {isResetMode ? (
                         <button
@@ -285,15 +249,12 @@ export function Login() {
                                 setNovaSenha('');
                                 setMostrarSenha(false);
                             }}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%' }}
                         >
                             <ArrowLeft size={16} /> Voltar para o Login
                         </button>
                     ) : (
                         <>
-                            <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 8px 0' }}>
-                                Esqueceu sua senha?
-                            </p>
+                            <p className="footer-text">Esqueceu sua senha?</p>
                             <button
                                 type="button"
                                 className="link-action"

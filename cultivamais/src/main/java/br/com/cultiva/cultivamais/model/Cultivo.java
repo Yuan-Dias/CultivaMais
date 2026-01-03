@@ -29,13 +29,11 @@ public class Cultivo {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name  = "planta_id")
-    // IMPORTANTE: Evita erro de proxy do Hibernate
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Planta plantaCultivada;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "areaCultivo_id")
-    // IMPORTANTE: Ignora a lista de volta e os proxies para não travar
     @JsonIgnoreProperties({"cultivos", "hibernateLazyInitializer", "handler"})
     private AreaCultivo areaCultivo;
 

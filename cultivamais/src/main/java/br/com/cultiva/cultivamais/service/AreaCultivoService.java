@@ -19,7 +19,7 @@ public class AreaCultivoService {
     private AreaCultivoRepository areaCultivoRepository;
 
     @Autowired
-    private LogRepository logRepository; // Injeção do Log
+    private LogRepository logRepository;
 
     @SuppressWarnings("null")
     public AreaCultivo criarAreaCultivo(@NonNull AreaCultivo novaArea) {

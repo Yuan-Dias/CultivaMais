@@ -11,20 +11,35 @@ import br.com.cultiva.cultivamais.model.Planta;
 import br.com.cultiva.cultivamais.repository.LogRepository;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
 import io.micrometer.common.lang.NonNull;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlantaService {
 
-    @Autowired private PlantaRepository plantaRepository;
-    @Autowired private LogRepository logRepository;
+    @Autowired
+    private PlantaRepository plantaRepository;
 
-    @SuppressWarnings("null")
-    public Planta criarPlanta(@NonNull Planta novaPlanta) {
+    @Autowired
+    private LogRepository logRepository;
+
+    @Autowired
+    private NotificacaoService notificacaoService;
+
+    @Transactional
+    public Planta criarPlanta(@NonNull Long idUsuario, @NonNull Planta novaPlanta) {
         Planta salva = plantaRepository.save(novaPlanta);
-        logRepository.save(new LogSistema("Sistema", "Cadastrou nova planta: " + salva.getNomePopular()));
+
+        logRepository.save(new LogSistema("Usuario ID " + idUsuario, "Cadastrou planta: " + salva.getNomePopular()));
+
+        notificacaoService.criarNotificacao(
+                idUsuario,
+                "Nova Espécie Cadastrada",
+                salva.getNomePopular() + " agora faz parte do catálogo.",
+                "info"
+        );
+
         return salva;
     }
-
     public List<Planta> listarTodas() {
         return plantaRepository.findAll();
     }
@@ -39,7 +54,7 @@ public class PlantaService {
         }
     }
 
-    @SuppressWarnings("null")
+    @Transactional
     public Planta atualizarPlanta(@NonNull Long id, Planta dadosAtualizados) {
         return plantaRepository.findById(id)
                 .map(plantaExistente -> {
@@ -47,6 +62,9 @@ public class PlantaService {
                     plantaExistente.setNomeCientifico(dadosAtualizados.getNomeCientifico());
                     plantaExistente.setTipoPlanta(dadosAtualizados.getTipoPlanta());
                     plantaExistente.setCicloMedioDias(dadosAtualizados.getCicloMedioDias());
+                    plantaExistente.setLuzRecomendada(dadosAtualizados.getLuzRecomendada());
+                    plantaExistente.setAguaRecomendada(dadosAtualizados.getAguaRecomendada());
+                    plantaExistente.setSolosRecomendados(dadosAtualizados.getSolosRecomendados());
 
                     Planta salva = plantaRepository.save(plantaExistente);
                     logRepository.save(new LogSistema("Sistema", "Atualizou cadastro da planta: " + salva.getNomePopular()));

@@ -2,7 +2,6 @@ package br.com.cultiva.cultivamais.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import br.com.cultiva.cultivamais.model.DoencaPraga;
 import br.com.cultiva.cultivamais.model.Evento;
 import br.com.cultiva.cultivamais.model.Irrigacao;
 import br.com.cultiva.cultivamais.model.Planta;
-import br.com.cultiva.cultivamais.model.TipoSolo;
 import br.com.cultiva.cultivamais.repository.AreaCultivoRepository;
 import br.com.cultiva.cultivamais.repository.CultivoRepository;
 import br.com.cultiva.cultivamais.repository.PlantaRepository;
@@ -32,47 +30,38 @@ public class RelatorioService {
     @Autowired
     private AreaCultivoRepository areaCultivoRepository;
 
-
-    public boolean verificarCompatibilidadeSolo(@NonNull Long idPlanta, @NonNull Long idAreaCultivo) {
-
-        @SuppressWarnings("null")
+    /**
+     * CORREÇÃO: Verifica se a planta é compatível com o solo E com a luz da área.
+     */
+    public boolean verificarCompatibilidadeTotal(Long idPlanta, Long idArea) {
         Planta planta = plantaRepository.findById(idPlanta)
-            .orElseThrow(() -> new ResourceNotFoundException("Planta não encontrada com ID: " + idPlanta));
+                .orElseThrow(() -> new ResourceNotFoundException("Planta não encontrada"));
+        AreaCultivo area = areaCultivoRepository.findById(idArea)
+                .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada"));
 
-        @SuppressWarnings("null")
-        AreaCultivo areaCultivo = areaCultivoRepository.findById(idAreaCultivo)
-            .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada com ID: " + idAreaCultivo));
+        boolean soloOk = planta.getSolosRecomendados().contains(area.getTipoSolo());
 
-        if (areaCultivo.getTipoSolo() == null) {
-            throw new IllegalArgumentException("A área selecionada não possui tipo de solo definido.");
+        // Verifica luz (Assumindo que Planta tem o campo luzRecomendada agora)
+        boolean luzOk = true;
+        if (planta.getLuzRecomendada() != null) {
+            luzOk = planta.getLuzRecomendada() == area.getQuantidadeLuz();
         }
 
-        TipoSolo soloDaArea = areaCultivo.getTipoSolo();
-        Set<TipoSolo> solosIdeais = planta.getSolosRecomendados();
-
-        return solosIdeais.contains(soloDaArea);
+        return soloOk && luzOk;
     }
 
-    public double calcularTotalColhidoArea(@NonNull Long idAreaCultivo) {
-        @SuppressWarnings("null")
-        AreaCultivo areaCultivo = areaCultivoRepository.findById(idAreaCultivo)
-            .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada com ID: " + idAreaCultivo));
-
-        double totalColhido = 0.0;
-
-        for (Cultivo cultivo : areaCultivo.getCultivos()) {
-            totalColhido += cultivo.getQuantidadeColhida();
-        }
-        return totalColhido;
+    /**
+     * EVOLUÇÃO: Performance otimizada via SQL (Repository)
+     */
+    public double calcularTotalColhidoArea(Long idArea) {
+        return cultivoRepository.sumQuantidadeColhidaByArea(idArea);
     }
 
     public double calcularTotalAguaCultivo(@NonNull Long idCultivo) {
-        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo)
-            .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado com ID: " + idCultivo));
+                .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado com ID: " + idCultivo));
 
         double totalVolume = 0.0;
-
         for (Evento evento : cultivo.getEventosRegistrados()) {
             if (evento instanceof Irrigacao irrigacao) {
                 totalVolume += irrigacao.getVolumeAgua();
@@ -82,14 +71,11 @@ public class RelatorioService {
     }
 
     public List<DoencaPraga> obterHistoricoPragas(@NonNull Long idCultivo) {
-        @SuppressWarnings("null")
         Cultivo cultivo = cultivoRepository.findById(idCultivo)
-            .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado com ID: " + idCultivo));
+                .orElseThrow(() -> new ResourceNotFoundException("Cultivo não encontrado com ID: " + idCultivo));
 
         List<DoencaPraga> historicoPragas = new ArrayList<>();
-
         for (Evento evento : cultivo.getEventosRegistrados()) {
-            
             if (evento instanceof DoencaPraga doencaPraga) {
                 historicoPragas.add(doencaPraga);
             }
@@ -98,10 +84,9 @@ public class RelatorioService {
     }
 
     public List<Cultivo> obterCultivosDaArea(@NonNull Long idArea) {
-        @SuppressWarnings("null")
         AreaCultivo area = areaCultivoRepository.findById(idArea)
-            .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada com ID: " + idArea));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Área não encontrada com ID: " + idArea));
+
         return area.getCultivos();
     }
 }
